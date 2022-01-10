@@ -1,7 +1,5 @@
 package type;
 
-import javax.lang.model.type.NullType;
-
 import net.sf.jsqlparser.expression.Expression;
 import visitor.MyTypeExpressionVisitor;
 

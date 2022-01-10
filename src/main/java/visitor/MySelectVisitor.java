@@ -2,6 +2,7 @@ package visitor;
 
 import java.util.List;
 
+import main.Environment;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -45,9 +46,11 @@ public class MySelectVisitor implements SelectVisitor {
 			}
 		}
 		for (SelectItem selectItem : selectItems) {
+			Environment.getInstance().moveOn();
 			MySelectItemVisitor singleVisitor = new MySelectItemVisitor();
 			selectItem.accept(singleVisitor);
 		}
+//		System.out.println(String.format("(declare-fun select(%s) Bool)", ));
 	}
 
 	@Override

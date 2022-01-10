@@ -21,30 +21,31 @@ import visitor.MySelectVisitor;
 
 public class SQL2MSFOL {
 	public static final List<String> testcases = Arrays.asList(
-			"SELECT 1 AS test"
-			,"SELECT 'Hoang' AS test"
-			,"SELECT TRUE AS test"
-			,"SELECT TRUE AS test1, 'HOANG' AS test2"
-			,"SELECT TRUE & TRUE AS test"
-			,"SELECT NOT TRUE AS test"
-			,"SELECT TRUE | TRUE AS test"
-			,"SELECT CASE WHEN TRUE THEN TRUE ELSE FALSE END AS test"
-			,"SELECT CASE WHEN TRUE THEN CASE WHEN TRUE THEN FALSE ELSE TRUE END ELSE FALSE END AS test"
-			,"SELECT 1 IS NULL AS test"
-			,"SELECT 1 IS NOT NULL AS test"
-			,"SELECT 1 = 1 AS test"
-			,"SELECT 1 > 1 AS test"
-			,"SELECT 1 < 1 AS test"
-			,"SELECT 1 >= 1 AS test"			
-			,"SELECT 1 <= 1 AS test"
-			,"SELECT 1 <> 1 AS test"
-			,"SELECT EXISTS (SELECT 1 AS test) AS test"
-			,"SELECT l.name AS lname FROM Lecturer l", 
-			"SELECT l.name = 'Hoang' AS test FROM Lecturer l",
-			"SELECT l.name AS lname, l.age AS lage FROM Lecturer l", 
-			"SELECT TRUE AS test FROM Lecturer l",
+			"SELECT 1 AS res"
+			,"SELECT 'Hoang' AS res"
+			,"SELECT TRUE AS res"
+			,"SELECT TRUE AS res1, 'HOANG' AS res2"
+			,"SELECT TRUE & TRUE AS res"
+			,"SELECT NOT TRUE AS res"
+			,"SELECT TRUE | TRUE AS res"
+			,"SELECT CASE WHEN TRUE THEN TRUE ELSE FALSE END AS res"
+			,"SELECT CASE WHEN TRUE THEN CASE WHEN TRUE THEN FALSE ELSE TRUE END ELSE FALSE END AS res"
+			,"SELECT 1 IS NULL AS res"
+			,"SELECT 1 IS NOT NULL AS res"
+			,"SELECT 1 = 1 AS res"
+			,"SELECT 1 > 1 AS res"
+			,"SELECT 1 < 1 AS res"
+			,"SELECT 1 >= 1 AS res"			
+			,"SELECT 1 <= 1 AS res"
+			,"SELECT 1 <> 1 AS res"
+//			,"SELECT EXISTS (SELECT 1 AS res) AS res"
+			,"SELECT l.name AS lname FROM Lecturer l"
+			,"SELECT l.name = 'Hoang' AS res FROM Lecturer l"
+			,"SELECT l.name AS lname, l.age AS lage FROM Lecturer l", 
+			"SELECT 1 AS res FROM Lecturer l",
 			"SELECT CASE WHEN l.name IS NOT NULL THEN l.name ELSE 'no-name' END as lname FROM Lecturer l",
-			"SELECT MAX(l.age) AS max FROM Lecturer l");
+			"SELECT MAX(l.age) AS max FROM Lecturer l"
+			);
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, ParseException, Exception {
 		for (String testcase : testcases) {

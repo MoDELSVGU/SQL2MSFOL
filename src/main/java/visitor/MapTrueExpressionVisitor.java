@@ -1,9 +1,11 @@
 package visitor;
 
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import fol.FOLUtils;
+import fol.Predicate;
 import main.Environment;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
@@ -100,17 +102,6 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 	public MapTrueExpressionVisitor(String alias, SortType sort) {
 		this.alias = alias;
 		this.sort = sort;
-		if (Environment.getInstance().getAliasMapping().isEmpty()) {
-			System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
-		} else {
-			Collection<String> keys = Environment.getInstance().getAliasMapping().keySet();
-			Iterator<String> iKeys = keys.iterator();
-			while (iKeys.hasNext()) {
-				
-			}
-			System.out.println(String.format("(declare-fun %s_select (%s %s) %s)", this.alias, SortType.CLASSIFIER.getName(),
-					SQLTypeGetters.getType(tableColumn).getName(), SortType.BOOL.getName()));
-		}
 	}
 
 	@Override
@@ -165,7 +156,49 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 	public void visit(LongValue longValue) {
 		this.definition = String.valueOf(longValue.getValue());
 		MisinterpretPreventionUtils.fixInterpret(longValue.getValue(), SQLTypeGetters.getType(longValue).getName());
-		System.out.println(String.format("(assert (= %s %s))", alias, definition));
+		if (Environment.getInstance().getAliasMapping().isEmpty()) {
+			System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
+			System.out.println(String.format("(assert (= %s %s))", alias, definition));
+		} else {
+			Environment.getInstance().getParams().put(this.alias, this.sort);
+			Set<String> keys = Environment.getInstance().getParams().keySet();
+			String args = "";
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				args = args.concat(String.format("%s", sortType.getName()));
+			}
+			System.out.println(String.format("(declare-fun %s_select (%s) %s)", this.alias, args, 
+					SortType.BOOL.getName()));
+
+			String params = "%s";
+			for (String key : keys) {
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				String temp = String.format("((forall %s %s)) (%s)", key, sortType.getName(), "%s");
+				params = String.format(params, temp);
+			}
+
+			args = "";
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				args = args.concat(key);
+			}
+			String left = String.format("(%1$s_select %2$s)", this.alias, args);
+			String def = FOLUtils.def(this.alias, longValue);
+			List<String> defs = new ArrayList<String>();
+			for (String key : keys) {
+				if (!key.equals(this.alias))
+					defs.add(FOLUtils.def(key, Environment.getInstance().getAliasMapping().get(key)));
+			}
+			defs.add(def);
+			String right = FOLUtils.and(defs);
+			String template = "(assert %s)";
+			System.out.println(String.format(template, String.format(params, String.format("= %s %s", left, right))));
+		}
 	}
 
 	@Override
@@ -200,9 +233,54 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(StringValue stringValue) {
-		this.definition = stringValue.toString();
+		this.definition = String.valueOf(stringValue.toString());
 		MisinterpretPreventionUtils.fixInterpret(stringValue.toString(), SQLTypeGetters.getType(stringValue).getName());
-		System.out.println(String.format("(assert (= %s %s))", alias, definition));
+		if (Environment.getInstance().getAliasMapping().isEmpty()) {
+			System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
+			System.out.println(String.format("(assert (= %s %s))", alias, definition));
+		} else {
+			Environment.getInstance().getParams().put(this.alias, this.sort);
+			Set<String> keys = Environment.getInstance().getParams().keySet();
+			String args = "";
+			Predicate predicate = new Predicate(String.format("%1$s_select", this.alias));
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				args = args.concat(String.format("%s", sortType.getName()));
+				predicate.getParameters().put(key, sortType);
+			}
+			System.out.println(String.format("(declare-fun %s_select (%s) %s)", this.alias, args, 
+					SortType.BOOL.getName()));
+
+			String params = "%s";
+			for (String key : keys) {
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				String temp = String.format("((forall %s %s)) (%s)", key, sortType.getName(), "%s");
+				params = String.format(params, temp);
+			}
+
+			args = "";
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				args = args.concat(key);
+			}
+			String left = String.format("(%1$s_select %2$s)", this.alias, args);
+			Environment.getInstance().getAliasMapping().put(this.alias, predicate);
+			String def = FOLUtils.def(this.alias, stringValue);
+			List<String> defs = new ArrayList<String>();
+			for (String key : keys) {
+				if (!key.equals(this.alias))
+					defs.add(FOLUtils.def(key, Environment.getInstance().getAliasMapping().get(key)));
+			}
+			defs.add(def);
+			String right = FOLUtils.and(defs);
+			String template = "(assert %s)";
+			System.out.println(String.format(template, String.format(params, String.format("= %s %s", left, right))));
+		}
 	}
 
 	@Override
@@ -237,6 +315,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(AndExpression andExpression) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = andExpression.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -251,6 +330,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(OrExpression orExpression) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = orExpression.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -265,6 +345,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(XorExpression orExpression) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = orExpression.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -289,16 +370,64 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
 		leftExpression.accept(leftVisitor);
+		Environment.getInstance().getParams().remove(String.format("%s_left", this.alias));
 		Expression rightExpression = equalsTo.getRightExpression();
 		MapTrueExpressionVisitor rightVisitor = new MapTrueExpressionVisitor(String.format("%s_right", this.alias),
 				SQLTypeGetters.getType(rightExpression));
 		rightExpression.accept(rightVisitor);
-		System.out.println(
-				String.format("(assert (= %s (= %s %s)))", alias, leftVisitor.getAlias(), rightVisitor.getAlias()));
+		Environment.getInstance().getParams().remove(String.format("%s_right", this.alias));
+		Environment.getInstance().getParams().put(String.format("%s_left", this.alias), SQLTypeGetters.getType(leftExpression));
+		Environment.getInstance().getParams().put(String.format("%s_right", this.alias), SQLTypeGetters.getType(rightExpression));
+		if (Environment.getInstance().getAliasMapping().isEmpty()) {
+			System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
+			System.out.println(
+					String.format("(assert (= %s (= %s %s)))", alias, leftVisitor.getAlias(), rightVisitor.getAlias()));
+		} else {
+			Environment.getInstance().getParams().put(this.alias, this.sort);
+			Set<String> keys = Environment.getInstance().getParams().keySet();
+			String args = "";
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				args = args.concat(String.format("%s", sortType.getName()));
+			}
+			System.out.println(String.format("(declare-fun %s_select (%s) %s)", this.alias, args,
+					SortType.BOOL.getName()));
+
+			String params = "%s";
+			for (String key : keys) {
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				String temp = String.format("((forall %s %s)) (%s)", key, sortType.getName(),
+						"%s");
+				params = String.format(params, temp);
+			}
+
+			args = "";
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				args = args.concat(key);
+			}
+			String left = String.format("(%1$s_select %2$s)", this.alias, args);
+			String def = FOLUtils.def(this.alias, equalsTo);
+			List<String> defs = new ArrayList<String>();
+			for (String key : keys) {
+				if (!key.equals(this.alias))
+					defs.add(FOLUtils.def(key, Environment.getInstance().getAliasMapping().get(key)));
+			}
+			defs.add(def);
+			String right = FOLUtils.and(defs);
+			String template = "(assert %s)";
+			System.out.println(String.format(template, String.format(params, String.format("= %s %s", left, right))));
+		}
 	}
 
 	@Override
 	public void visit(GreaterThan greaterThan) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = greaterThan.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -313,6 +442,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(GreaterThanEquals greaterThanEquals) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = greaterThanEquals.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -339,17 +469,18 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(IsNullExpression isNullExpression) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression expression = isNullExpression.getLeftExpression();
 		MapTrueExpressionVisitor visitor = new MapTrueExpressionVisitor(String.format("%s_isnull", this.alias),
 				SQLTypeGetters.getType(expression));
 		expression.accept(visitor);
 
 		if (isNullExpression.isNot()) {
-			System.out.println(String.format("(assert (distinct %s %s))", alias, visitor.getAlias(),
-					NullTypeGetters.getNullType(SQLTypeGetters.getType(expression))));
+			System.out.println(String.format("(assert (= %s (distinct %s %s)))", alias, visitor.getAlias(),
+					NullTypeGetters.getNullType(SQLTypeGetters.getType(expression)).getName()));
 		} else {
-			System.out.println(String.format("(assert (= %s %s))", alias, visitor.getAlias(),
-					NullTypeGetters.getNullType(SQLTypeGetters.getType(expression))));
+			System.out.println(String.format("(assert (= %s (= %s %s)))", alias, visitor.getAlias(),
+					NullTypeGetters.getNullType(SQLTypeGetters.getType(expression)).getName()));
 		}
 
 	}
@@ -368,6 +499,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(MinorThan minorThan) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = minorThan.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -382,6 +514,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(MinorThanEquals minorThanEquals) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = minorThanEquals.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -396,6 +529,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NotEqualsTo notEqualsTo) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = notEqualsTo.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -412,21 +546,60 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 	public void visit(Column tableColumn) {
 		String columnName = tableColumn.getColumnName();
 		if ("TRUE".equals(columnName)) {
+			System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 			this.definition = "true";
 			System.out.println(String.format("(assert (= %s %s))", this.alias, definition));
 		} else if ("FALSE".equals(columnName)) {
+			System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 			this.definition = "false";
 			System.out.println(String.format("(assert (= %s %s))", this.alias, definition));
 		} else {
-			String alias = tableColumn.getTable().getName();
-			System.out.println(String.format("(declare-fun %s_select (%s %s) %s)", this.alias, SortType.CLASSIFIER.getName(),
-					SQLTypeGetters.getType(tableColumn).getName(), SortType.BOOL.getName()));
-			System.out.println(String.format("(assert ((forall %1$s %2$s)) (((forall %3$s %4$s)) (= (%3$s_select %1$s %3$s) (and (%5$s_from %1$s) (= %2$s (%6$s_%5$s %3$s)))))", 
-					alias, SortType.CLASSIFIER.getName(),
-					this.alias, SQLTypeGetters.getType(tableColumn).getName(),
-					Environment.getInstance().getAliasMapping().get(alias), columnName));
+			Environment.getInstance().getParams().put(this.alias, this.sort);
+			Set<String> keys = Environment.getInstance().getParams().keySet();
+			String args = "";
+			Predicate leftPredicate = new Predicate(String.format("%1$s_select", this.alias));
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				args = args.concat(String.format("%s", sortType.getName()));
+				leftPredicate.getParameters().put(key, sortType);
+			}
+			System.out.println(
+					String.format("(declare-fun %s_select (%s) %s)", this.alias, args, SortType.BOOL.getName()));
+
+			String params = "%s";
+			for (String key : keys) {
+				SortType sortType = Environment.getInstance().getParams().get(key);
+				String temp = String.format("((forall %s %s)) (%s)", key, sortType.getName(), "%s");
+				params = String.format(params, temp);
+			}
+
+			args = "";
+			for (String key : keys) {
+				if (!args.isBlank()) {
+					args = args.concat(" ");
+				}
+				args = args.concat(key);
+			}
+			String left = String.format("(%1$s_select %2$s)", this.alias, args);
+			
+			Environment.getInstance().getAliasMapping().put(this.alias, leftPredicate);
+			String def = FOLUtils.def(this.alias, tableColumn);
+			List<String> defs = new ArrayList<String>();
+			for (String key : keys) {
+				if (Environment.getInstance().getAliasMapping().get(key) != null) {
+					if (!key.equals(this.alias))
+						defs.add(FOLUtils.def(key, Environment.getInstance().getAliasMapping().get(key)));
+				}
+			}
+			defs.add(def);
+			String right = FOLUtils.and(defs);
+			String template = "(assert %s)";
+			System.out.println(String.format(template, String.format(params, String.format("= %s %s", left, right))));
 		}
-		
+
 	}
 
 	@Override
@@ -437,6 +610,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(CaseExpression caseExpression) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		List<WhenClause> whenClauses = caseExpression.getWhenClauses();
 		String definition = "%s";
 		for (int i = 0; i < whenClauses.size(); i++) {
@@ -449,7 +623,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 			MapTrueExpressionVisitor thenExpressionVisitor = new MapTrueExpressionVisitor(
 					String.format("%s_then_%s", this.alias, String.valueOf(i)), SQLTypeGetters.getType(thenExpression));
 			thenExpression.accept(thenExpressionVisitor);
-			String temp = String.format("(or (=> %s %s) (=> (not %s) %s))", whenExpressionVisitor.getAlias(),
+			String temp = String.format("(and (=> %s %s) (=> (not %s) %s))", whenExpressionVisitor.getAlias(),
 					thenExpressionVisitor.getAlias(), whenExpressionVisitor.getAlias(), "%s");
 			definition = String.format(definition, temp);
 		}
@@ -495,6 +669,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(BitwiseAnd bitwiseAnd) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = bitwiseAnd.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -509,6 +684,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(BitwiseOr bitwiseOr) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = bitwiseOr.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -523,6 +699,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(BitwiseXor bitwiseXor) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression leftExpression = bitwiseXor.getLeftExpression();
 		MapTrueExpressionVisitor leftVisitor = new MapTrueExpressionVisitor(String.format("%s_left", this.alias),
 				SQLTypeGetters.getType(leftExpression));
@@ -657,6 +834,7 @@ public class MapTrueExpressionVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NotExpression aThis) {
+		System.out.println(String.format("(declare-const %s %s)", alias, sort.getName()));
 		Expression expression = aThis.getExpression();
 		MapTrueExpressionVisitor visitor = new MapTrueExpressionVisitor(String.format("%s_neg", this.alias),
 				SQLTypeGetters.getType(expression));
