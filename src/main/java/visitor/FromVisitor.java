@@ -9,13 +9,12 @@ import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.TableFunction;
 import net.sf.jsqlparser.statement.select.ValuesList;
-import sql2msfol.select.NamingConvention;
 
 public class FromVisitor implements FromItemVisitor {
 
 	@Override
 	public void visit(Table tableName) {
-		NamingConvention.saveSelIndex(tableName.getName(), tableName);
+//		NamingConvention.saveSelIndex(tableName.getName(), tableName);
 	}
 
 	@Override

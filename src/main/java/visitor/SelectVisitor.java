@@ -2,6 +2,7 @@ package visitor;
 
 import org.vgu.dm2schema.dm.DataModel;
 
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.statement.Block;
 import net.sf.jsqlparser.statement.Commit;
 import net.sf.jsqlparser.statement.CreateFunctionalStatement;
@@ -40,9 +41,9 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.merge.Merge;
 import net.sf.jsqlparser.statement.replace.Replace;
 import net.sf.jsqlparser.statement.select.FromItem;
-import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.show.ShowTablesStatement;
 import net.sf.jsqlparser.statement.truncate.Truncate;
 import net.sf.jsqlparser.statement.update.Update;
@@ -50,6 +51,7 @@ import net.sf.jsqlparser.statement.upsert.Upsert;
 import net.sf.jsqlparser.statement.values.ValuesStatement;
 import sql2msfol.select.Index;
 import sql2msfol.select.SelectPattern;
+import sql2msfol.select.Value;
 import sql2msfol.utils.StatementUtils;
 
 public class SelectVisitor implements StatementVisitor {
@@ -195,10 +197,16 @@ public class SelectVisitor implements StatementVisitor {
 
 	@Override
 	public void visit(Select select) {
+		PlainSelect ps = (PlainSelect) select.getSelectBody();
 		try {
 			if (StatementUtils.noFromClause(select)) {
 				Index.declareFunction(select, SelectPattern.ONLY_SELECT);
 				Index.defineFunction(select, SelectPattern.ONLY_SELECT);
+				ps.getSelectItems().forEach(si -> {
+					SelectExpressionItem sei = (SelectExpressionItem) si;
+					Expression expr = sei.getExpression();
+					Value.defineFunction(ps, expr);
+				});
 				return;
 			}
 
@@ -209,14 +217,14 @@ public class SelectVisitor implements StatementVisitor {
 					Index.defineFunction(select, SelectPattern.SELECT_FROM);
 					return;
 				}
-				
+
 				{
 					Index.declareFunction(select, SelectPattern.SELECT_FROM_WHERE);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM_WHERE);
 					return;
 				}
 			}
-			
+
 			{
 				visitFromItem(select);
 				visitJoin(select);
@@ -226,21 +234,21 @@ public class SelectVisitor implements StatementVisitor {
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN);
 						return;
 					}
-					
+
 					{
 						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN_ON);
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_ON);
 						return;
 					}
 				}
-				
+
 				{
 					if (StatementUtils.noOnClause(select)) {
 						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN_WHERE);
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_WHERE);
 						return;
 					}
-					
+
 					{
 						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN_ON_WHERE);
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_ON_WHERE);
@@ -251,8 +259,7 @@ public class SelectVisitor implements StatementVisitor {
 		} catch (Exception e) {
 			System.out.println("Exception: " + e.getMessage());
 		}
-		
-		
+
 	}
 
 	private void visitJoin(Select select) {

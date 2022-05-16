@@ -55,6 +55,7 @@ public class DM2MSFOL {
 		String attributeName_lowercase = a.getName().toLowerCase();
 		String type = "String".equals(a.getType()) ? "String" : "Int";
 		String att_dec = "(declare-fun val-%s-%s (Int) %s)";
+		System.out.println(String.format(att_dec, entityName_lowercase, attributeName_lowercase, type));
 		String att_def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (id x)))))";
 		System.out.println(String.format(att_def, entityName_lowercase, attributeName_lowercase));
 	}
