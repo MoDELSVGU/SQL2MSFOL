@@ -1,0 +1,11 @@
+package sql2msfol.select;
+
+public enum SelectPattern {
+	ONLY_SELECT,
+	SELECT_FROM,
+	SELECT_FROM_WHERE,
+	SELECT_FROM_JOIN,
+	SELECT_FROM_JOIN_ON,
+	SELECT_FROM_JOIN_ON_WHERE,
+	SELECT_FROM_JOIN_WHERE
+}
