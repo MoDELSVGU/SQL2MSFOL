@@ -1,8 +1,12 @@
 package visitor;
 
-import org.vgu.dm2schema.dm.DataModel;
+import org.vgu.dm2schema.dm.DmUtils;
+import org.vgu.dm2schema.dm.Entity;
 
+import datamodel.DataModelHolder;
+import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Block;
 import net.sf.jsqlparser.statement.Commit;
 import net.sf.jsqlparser.statement.CreateFunctionalStatement;
@@ -50,12 +54,12 @@ import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.statement.upsert.Upsert;
 import net.sf.jsqlparser.statement.values.ValuesStatement;
 import sql2msfol.select.Index;
+import sql2msfol.select.NamingConvention;
 import sql2msfol.select.SelectPattern;
 import sql2msfol.select.Value;
 import sql2msfol.utils.StatementUtils;
 
 public class SelectVisitor implements StatementVisitor {
-	private DataModel dataModel;
 
 	@Override
 	public void visit(SavepointStatement savepointStatement) {
@@ -202,10 +206,12 @@ public class SelectVisitor implements StatementVisitor {
 			if (StatementUtils.noFromClause(select)) {
 				Index.declareFunction(select, SelectPattern.ONLY_SELECT);
 				Index.defineFunction(select, SelectPattern.ONLY_SELECT);
+				Entity tb = DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(ps));
 				ps.getSelectItems().forEach(si -> {
 					SelectExpressionItem sei = (SelectExpressionItem) si;
 					Expression expr = sei.getExpression();
-					Value.defineFunction(ps, expr);
+					Alias alias = sei.getAlias();
+					Value.defineFunction(tb, expr, alias);
 				});
 				return;
 			}
@@ -215,12 +221,29 @@ public class SelectVisitor implements StatementVisitor {
 				if (StatementUtils.noWhereClause(select)) {
 					Index.declareFunction(select, SelectPattern.SELECT_FROM);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM);
+					Entity tb = DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(ps));
+					ps.getSelectItems().forEach(si -> {
+						SelectExpressionItem sei = (SelectExpressionItem) si;
+						Expression expr = sei.getExpression();
+						Alias alias = sei.getAlias();
+						Value.defineFunction(tb, expr, alias);
+					});
 					return;
 				}
 
 				{
+					FromItem fi = ps.getFromItem();
+					Expression where = ps.getWhere();
+					Value.defineFunction(getEntity(fi), where, null);
 					Index.declareFunction(select, SelectPattern.SELECT_FROM_WHERE);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM_WHERE);
+					Entity tb = DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(ps));
+					ps.getSelectItems().forEach(si -> {
+						SelectExpressionItem sei = (SelectExpressionItem) si;
+						Expression expr = sei.getExpression();
+						Alias alias = sei.getAlias();
+						Value.defineFunction(tb, expr, alias);
+					});
 					return;
 				}
 			}
@@ -257,9 +280,25 @@ public class SelectVisitor implements StatementVisitor {
 				}
 			}
 		} catch (Exception e) {
-			System.out.println("Exception: " + e.getMessage());
+			e.printStackTrace();
 		}
 
+	}
+
+	private Entity getEntity(FromItem fi) {
+		if (fi instanceof Table) {
+			Table tb = (Table) fi;
+			return DmUtils.getEntity(DataModelHolder.getDataModel(), tb.getName());
+		}
+		else {
+			try {
+				return DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(fi));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return null;
 	}
 
 	private void visitJoin(Select select) {
@@ -383,13 +422,4 @@ public class SelectVisitor implements StatementVisitor {
 		// TODO Auto-generated method stub
 
 	}
-
-	public DataModel getDataModel() {
-		return dataModel;
-	}
-
-	public void setDataModel(DataModel dataModel) {
-		this.dataModel = dataModel;
-	}
-
 }

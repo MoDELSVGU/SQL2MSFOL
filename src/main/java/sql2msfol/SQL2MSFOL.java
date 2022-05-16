@@ -16,6 +16,10 @@ import net.sf.jsqlparser.statement.Statement;
 import visitor.SelectVisitor;
 
 public class SQL2MSFOL {
+	public DataModel getDataModel() {
+		return dataModel;
+	}
+
 	private DataModel dataModel;
 
 	public void setUpDataModelFromURL(String url) throws FileNotFoundException, IOException, ParseException, Exception {
@@ -32,7 +36,6 @@ public class SQL2MSFOL {
 	public void map(String sql) throws JSQLParserException {
 		Statement statementSql = CCJSqlParserUtil.parse(sql);
 		SelectVisitor visitor = new SelectVisitor();
-		visitor.setDataModel(this.dataModel);
 		statementSql.accept(visitor);
 //		visitor.formalize();
 	}

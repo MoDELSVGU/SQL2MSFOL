@@ -1,5 +1,8 @@
 package visitor;
 
+import org.vgu.dm2schema.dm.DmUtils;
+
+import datamodel.DataModelHolder;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -81,33 +84,34 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import sql2msfol.select.Type;
 
 public class ExprType implements ExpressionVisitor {
-	
+
 	private String type;
 
 	@Override
 	public void visit(BitwiseRightShift aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(BitwiseLeftShift aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(NullValue nullValue) {
-		//TODO: Boolean for now!
+		// TODO: Boolean for now!
 		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(Function function) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -119,19 +123,19 @@ public class ExprType implements ExpressionVisitor {
 	@Override
 	public void visit(JdbcParameter jdbcParameter) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(JdbcNamedParameter jdbcNamedParameter) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(DoubleValue doubleValue) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -142,31 +146,31 @@ public class ExprType implements ExpressionVisitor {
 	@Override
 	public void visit(HexValue hexValue) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(DateValue dateValue) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(TimeValue timeValue) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(TimestampValue timestampValue) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Parenthesis parenthesis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -177,55 +181,53 @@ public class ExprType implements ExpressionVisitor {
 	@Override
 	public void visit(Addition addition) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Division division) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(IntegerDivision division) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Multiplication multiplication) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Subtraction subtraction) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(AndExpression andExpression) {
-		// TODO Auto-generated method stub
-		
+		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(OrExpression orExpression) {
-		// TODO Auto-generated method stub
-		
+		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(XorExpression orExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Between between) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -246,31 +248,30 @@ public class ExprType implements ExpressionVisitor {
 	@Override
 	public void visit(InExpression inExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(FullTextSearch fullTextSearch) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(IsNullExpression isNullExpression) {
-		// TODO Auto-generated method stub
-		
+		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(IsBooleanExpression isBooleanExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(LikeExpression likeExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -294,191 +295,207 @@ public class ExprType implements ExpressionVisitor {
 		if ("TRUE".equalsIgnoreCase(columnName)) {
 			this.type = "Bool";
 			return;
-		} 
+		}
 		if ("FALSE".equalsIgnoreCase(columnName)) {
 			this.type = "Bool";
 			return;
+		}
+		{
+			String tableName = tableColumn.getTable().getName();
+			if (columnName.equals(tableName+"_id")) {
+//				this.type = "Classifier";
+				this.type = "Int";
+				return;
+			}
+			{
+				this.type = Type.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), tableName, columnName));
+				return;
+			}
 		}
 	}
 
 	@Override
 	public void visit(SubSelect subSelect) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(CaseExpression caseExpression) {
-		// TODO Auto-generated method stub
-		
+		Expression elze = caseExpression.getElseExpression();
+		Expression then = caseExpression.getWhenClauses().get(0).getThenExpression();
+		elze.accept(this);
+		String elzeType = this.getType();
+		then.accept(this);
+		String thenType = this.getType();
+		if (elzeType != thenType) {
+			System.out.println("Type mismatch in the Case expression");
+		}
 	}
 
 	@Override
 	public void visit(WhenClause whenClause) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(ExistsExpression existsExpression) {
-		// TODO Auto-generated method stub
-		
+		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(AnyComparisonExpression anyComparisonExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Concat concat) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Matches matches) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(BitwiseAnd bitwiseAnd) {
-		// TODO Auto-generated method stub
-		
+		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(BitwiseOr bitwiseOr) {
-		// TODO Auto-generated method stub
-		
+		this.type = "Bool";
 	}
 
 	@Override
 	public void visit(BitwiseXor bitwiseXor) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(CastExpression cast) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(Modulo modulo) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(AnalyticExpression aexpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(ExtractExpression eexpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(IntervalExpression iexpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(OracleHierarchicalExpression oexpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(RegExpMatchOperator rexpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(JsonExpression jsonExpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(JsonOperator jsonExpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(RegExpMySQLOperator regExpMySQLOperator) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(UserVariable var) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(NumericBind bind) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(KeepExpression aexpr) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(MySQLGroupConcat groupConcat) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(ValueListExpression valueList) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(RowConstructor rowConstructor) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(RowGetExpression rowGetExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(OracleHint hint) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(TimeKeyExpression timeKeyExpression) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(DateTimeLiteralExpression literal) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -489,77 +506,76 @@ public class ExprType implements ExpressionVisitor {
 	@Override
 	public void visit(NextValExpression aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(CollateExpression aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(SimilarToExpression aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(ArrayExpression aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(ArrayConstructor aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(VariableAssignment aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(XMLSerializeExpr aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(TimezoneExpression aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(JsonAggregateFunction aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(JsonFunction aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(ConnectByRootOperator aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void visit(OracleNamedFunctionParameter aThis) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public String getType() {
 		return type;
 	}
-
 }

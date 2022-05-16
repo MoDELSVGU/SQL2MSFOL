@@ -2,6 +2,12 @@ package sql2msfol.select;
 
 import java.util.HashMap;
 
+import org.vgu.dm2schema.dm.DataModel;
+import org.vgu.dm2schema.dm.DmUtils;
+import org.vgu.dm2schema.dm.Entity;
+
+import datamodel.AttributeExtended;
+import datamodel.DataModelHolder;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -23,13 +29,9 @@ public class NamingConvention {
 	}
 
 	public static String generateSelName() {
-		return String.format("sel%s", String.valueOf(selCounter));
+		return String.format("sel%s", String.valueOf(selCounter++));
 	}
 	
-	public static String generateSelIntermediateName() {
-		return String.format("sel%s-join", String.valueOf(selCounter));
-	}
-
 	public static String generateValName() {
 		return String.format("val%s", String.valueOf(valCounter++));
 	}
@@ -38,18 +40,35 @@ public class NamingConvention {
 		selIndices.put(subSelect.getSelectBody(), name);
 	}
 	
-	public static void saveVal(String name, Expression expr) {
+	public static void saveVal(String index, String name, Expression expr) {
 		valIndices.put(expr, name);
+		addNewAttribute(index, name, expr);
+	}
+
+	private static void addNewAttribute(String index, String name, Expression expr) {
+		AttributeExtended att = new AttributeExtended();
+		att.setName(name);
+		att.setType(Type.get(expr));
+		Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), index);
+		e.getAttributes().add(att);
 	}
 
 	public static void saveSelIndex(String name, SelectBody selectBody) {
 		selIndices.put(selectBody, name);
+		addNewEntity(name);
+	}
+
+	private static void addNewEntity(String name) {
+		DataModel dm = DataModelHolder.getDataModel();
+		Entity e = new Entity();
+		e.setClazz(name);
+		dm.getEntities().put(name, e);
 	}
 
 	public static String getSelName(FromItem fromItem) throws Exception {
 		if (fromItem instanceof Table) {
 			Table t = (Table) fromItem;
-			return t.getName().toLowerCase();
+			return t.getName();
 		}
 		if (fromItem instanceof SubSelect) {
 			SubSelect ss = (SubSelect) fromItem;

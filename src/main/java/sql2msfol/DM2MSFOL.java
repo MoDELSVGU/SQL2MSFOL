@@ -15,9 +15,9 @@ public class DM2MSFOL {
 
 	private static void formalize(Association a) {
 		String associationName = a.getName();
-		String associationName_lowercase = a.getName().toLowerCase();
-		String leftEntityName_lowercase = a.getLeftEntityName().toLowerCase();
-		String rightEntityName_lowercase = a.getRightEntityName().toLowerCase();
+		String associationName_lowercase = a.getName();
+		String leftEntityName_lowercase = a.getLeftEntityName();
+		String rightEntityName_lowercase = a.getRightEntityName();
 		String assoc_dec = "(declare-fun index-%s (Int) (Bool))";
 		System.out.println(String.format(assoc_dec, associationName_lowercase));
 		String assoc_def = "(assert (forall ((x Int)) (=> (index-%s x) (exists ((c1 Classifier) (c2 Classifier)) (and (%s c1 c2) (= c1 (id (left x))) (= c2 (id (right x))))))))";
@@ -34,7 +34,7 @@ public class DM2MSFOL {
 
 	private static void formalize(Entity c) {
 		String name = c.getName();
-		String name_lowercase = c.getName().toLowerCase();
+		String name_lowercase = c.getName();
 		String index_dec = "(declare-fun index-%s (Int) Bool)";
 		System.out.println(String.format(index_dec, name_lowercase));
 		String id_dec = "(declare-fun val-%s-id (Int) Classifier)";
@@ -51,8 +51,8 @@ public class DM2MSFOL {
 	}
 
 	private static void formalize(Entity c, Attribute a) {
-		String entityName_lowercase = c.getName().toLowerCase();
-		String attributeName_lowercase = a.getName().toLowerCase();
+		String entityName_lowercase = c.getName();
+		String attributeName_lowercase = a.getName();
 		String type = "String".equals(a.getType()) ? "String" : "Int";
 		String att_dec = "(declare-fun val-%s-%s (Int) %s)";
 		System.out.println(String.format(att_dec, entityName_lowercase, attributeName_lowercase, type));

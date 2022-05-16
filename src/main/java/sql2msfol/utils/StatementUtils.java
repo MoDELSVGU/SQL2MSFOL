@@ -36,7 +36,7 @@ public class StatementUtils {
 		SelectBody sb = select.getSelectBody();
 		if (sb instanceof PlainSelect) {
 			PlainSelect ps = (PlainSelect) sb;
-			return ps.getWhere() != null;
+			return ps.getWhere() == null;
 		}
 		throw new Exception("Unfamiliar SQL pattern");
 	}

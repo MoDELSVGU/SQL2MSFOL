@@ -1,5 +1,8 @@
 package visitor;
 
+import org.vgu.dm2schema.dm.Entity;
+
+import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -80,7 +83,8 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMatchOperator;
 import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.statement.select.SelectBody;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import sql2msfol.select.NamingConvention;
 import sql2msfol.select.Type;
@@ -88,10 +92,12 @@ import sql2msfol.select.Value;
 
 public class ExprVisitor implements ExpressionVisitor {
 
-	private SelectBody sb;
+	private String index;
+	private Alias alias;
+	private Entity sourceEntity;
 
-	public void setSb(SelectBody sb) {
-		this.sb = sb;
+	public void setIndex(String index) {
+		this.index = index;
 	}
 
 	@Override
@@ -108,9 +114,9 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NullValue nullValue) {
-		Value.declareFunction(sb, nullValue, Type.get(nullValue));
+		Value.declareFunction(index, nullValue, Type.get(nullValue), alias);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) NULL))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(nullValue)));
+		System.out.println(String.format(def, index, NamingConvention.getValName(nullValue)));
 		return;
 	}
 
@@ -122,12 +128,12 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(SignedExpression signedExpression) {
+		Value.declareFunction(index, signedExpression, Type.get(signedExpression), alias);
 		Expression expr = signedExpression.getExpression();
 		if (expr instanceof LongValue) {
-			Value.declareFunction(sb, signedExpression, Type.get(signedExpression));
 			expr.accept(this);
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) (* (-1) (val-%1$s-%3$s x)))))))";
-			System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(signedExpression),
+			System.out.println(String.format(def, index, NamingConvention.getValName(signedExpression),
 					NamingConvention.getValName(expr)));
 		}
 	}
@@ -152,9 +158,9 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(LongValue longValue) {
-		Value.declareFunction(sb, longValue, Type.get(longValue));
+		Value.declareFunction(index, longValue, Type.get(longValue), alias);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) %3$s))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(longValue),
+		System.out.println(String.format(def, index, NamingConvention.getValName(longValue),
 				String.valueOf(longValue.getValue())));
 	}
 
@@ -190,10 +196,9 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(StringValue stringValue) {
-		Value.declareFunction(sb, stringValue, Type.get(stringValue));
+		Value.declareFunction(index, stringValue, Type.get(stringValue), alias);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) %3$s))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(stringValue),
-				stringValue));
+		System.out.println(String.format(def, index, NamingConvention.getValName(stringValue), stringValue));
 	}
 
 	@Override
@@ -228,37 +233,37 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(AndExpression andExpression) {
+		Value.declareFunction(index, andExpression, Type.get(andExpression), alias);
 		Expression left = andExpression.getLeftExpression();
 		Expression right = andExpression.getRightExpression();
-		Value.declareFunction(sb, andExpression, Type.get(andExpression));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(andExpression),
+		System.out.println(String.format(def, index, NamingConvention.getValName(andExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (or (= (val-%1$s-%3$s x) FALSE) (= (val-%1$s-%4$s x) FALSE))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(andExpression),
+		System.out.println(String.format(def2, index, NamingConvention.getValName(andExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) TRUE)))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(andExpression),
+		System.out.println(String.format(def3, index, NamingConvention.getValName(andExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 	}
 
 	@Override
 	public void visit(OrExpression orExpression) {
+		Value.declareFunction(index, orExpression, Type.get(orExpression), alias);
 		Expression left = orExpression.getLeftExpression();
 		Expression right = orExpression.getRightExpression();
-		Value.declareFunction(sb, orExpression, Type.get(orExpression));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (or (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(orExpression),
+		System.out.println(String.format(def, index, NamingConvention.getValName(orExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (= (val-%1$s-%3$s x) FALSE) (= (val-%1$s-%4$s x) FALSE))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(orExpression),
+		System.out.println(String.format(def2, index, NamingConvention.getValName(orExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) FALSE) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) FALSE)))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(orExpression),
+		System.out.println(String.format(def3, index, NamingConvention.getValName(orExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 	}
 
@@ -276,57 +281,65 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(EqualsTo equalsTo) {
+		Value.declareFunction(index, equalsTo, Type.get(equalsTo), alias);
 		Expression left = equalsTo.getLeftExpression();
 		Expression right = equalsTo.getRightExpression();
-		Value.declareFunction(sb, equalsTo, Type.get(equalsTo));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(equalsTo),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def, index, NamingConvention.getValName(equalsTo), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (= (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(equalsTo),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def2, index, NamingConvention.getValName(equalsTo), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (= (val-%1$s-%3$s x) %4$s) (= (val-%1$s-%5$s x) %6$s))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(equalsTo),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def3, index, NamingConvention.getValName(equalsTo), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 	}
 
 	@Override
 	public void visit(GreaterThan greaterThan) {
+		Value.declareFunction(index, greaterThan, Type.get(greaterThan), alias);
 		Expression left = greaterThan.getLeftExpression();
 		Expression right = greaterThan.getRightExpression();
-		Value.declareFunction(sb, greaterThan, Type.get(greaterThan));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (> (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(greaterThan),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def, index, NamingConvention.getValName(greaterThan), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (> (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(greaterThan),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def2, index, NamingConvention.getValName(greaterThan), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (= (val-%1$s-%3$s x) %4$s) (= (val-%1$s-%5$s x) %6$s))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(greaterThan),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def3, index, NamingConvention.getValName(greaterThan), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 	}
 
 	@Override
 	public void visit(GreaterThanEquals greaterThanEquals) {
+		Value.declareFunction(index, greaterThanEquals, Type.get(greaterThanEquals), alias);
 		Expression left = greaterThanEquals.getLeftExpression();
 		Expression right = greaterThanEquals.getRightExpression();
-		Value.declareFunction(sb, greaterThanEquals, Type.get(greaterThanEquals));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (>= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(greaterThanEquals),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(String.format(def, index, NamingConvention.getValName(greaterThanEquals),
+				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
+				Type.nullOf(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (>= (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(greaterThanEquals),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(String.format(def2, index, NamingConvention.getValName(greaterThanEquals),
+				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
+				Type.nullOf(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (= (val-%1$s-%3$s x) %4$s) (= (val-%1$s-%5$s x) %6$s))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(greaterThanEquals),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
-
+		System.out.println(String.format(def3, index, NamingConvention.getValName(greaterThanEquals),
+				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
+				Type.nullOf(right)));
 	}
 
 	@Override
@@ -343,12 +356,31 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(IsNullExpression isNullExpression) {
-		// TODO Auto-generated method stub
-
+		Value.declareFunction(index, isNullExpression, Type.get(isNullExpression), alias);
+		Expression source = isNullExpression.getLeftExpression();
+		source.accept(this);
+		if (isNullExpression.isNot()) {
+			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (= (val-%1$s-%3$s x) %4$s)))))";
+			System.out.println(String.format(def, index, NamingConvention.getValName(isNullExpression),
+					NamingConvention.getValName(source), Type.nullOf(source)));
+			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (not (= (val-%1$s-%3$s x) %4$s))))))";
+			System.out.println(String.format(def2, index, NamingConvention.getValName(isNullExpression),
+					NamingConvention.getValName(source), Type.nullOf(source)));
+			return;
+		}
+		{
+			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (= (val-%1$s-%3$s x) %4$s)))))";
+			System.out.println(String.format(def, index, NamingConvention.getValName(isNullExpression),
+					NamingConvention.getValName(source), Type.nullOf(source)));
+			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (not (= (val-%1$s-%3$s x) %4$s))))))";
+			System.out.println(String.format(def2, index, NamingConvention.getValName(isNullExpression),
+					NamingConvention.getValName(source), Type.nullOf(source)));
+			return;
+		}
 	}
 
 	@Override
-	public void visit(IsBooleanExpression isBooleanExpression) {
+	public void visit(IsBooleanExpression iindexooleanExpression) {
 		// TODO Auto-generated method stub
 
 	}
@@ -361,78 +393,100 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(MinorThan minorThan) {
+		Value.declareFunction(index, minorThan, Type.get(minorThan), alias);
 		Expression left = minorThan.getLeftExpression();
 		Expression right = minorThan.getRightExpression();
-		Value.declareFunction(sb, minorThan, Type.get(minorThan));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (< (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(minorThan),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def, index, NamingConvention.getValName(minorThan), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (< (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(minorThan),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def2, index, NamingConvention.getValName(minorThan), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (= (val-%1$s-%3$s x) %4$s) (= (val-%1$s-%5$s x) %6$s))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(minorThan),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def3, index, NamingConvention.getValName(minorThan), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 	}
 
 	@Override
 	public void visit(MinorThanEquals minorThanEquals) {
+		Value.declareFunction(index, minorThanEquals, Type.get(minorThanEquals), alias);
 		Expression left = minorThanEquals.getLeftExpression();
 		Expression right = minorThanEquals.getRightExpression();
-		Value.declareFunction(sb, minorThanEquals, Type.get(minorThanEquals));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (<= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(minorThanEquals),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(String.format(def, index, NamingConvention.getValName(minorThanEquals),
+				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
+				Type.nullOf(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (<= (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(minorThanEquals),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(String.format(def2, index, NamingConvention.getValName(minorThanEquals),
+				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
+				Type.nullOf(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (= (val-%1$s-%3$s x) %4$s) (= (val-%1$s-%5$s x) %6$s))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(minorThanEquals),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(String.format(def3, index, NamingConvention.getValName(minorThanEquals),
+				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
+				Type.nullOf(right)));
 	}
 
 	@Override
 	public void visit(NotEqualsTo notEqualsTo) {
+		Value.declareFunction(index, notEqualsTo, Type.get(notEqualsTo), alias);
 		Expression left = notEqualsTo.getLeftExpression();
 		Expression right = notEqualsTo.getRightExpression();
-		Value.declareFunction(sb, notEqualsTo, Type.get(notEqualsTo));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (= (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(notEqualsTo),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def, index, NamingConvention.getValName(notEqualsTo), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(notEqualsTo),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def2, index, NamingConvention.getValName(notEqualsTo), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (= (val-%1$s-%3$s x) %4$s) (= (val-%1$s-%5$s x) %6$s))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(notEqualsTo),
-				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
+		System.out.println(
+				String.format(def3, index, NamingConvention.getValName(notEqualsTo), NamingConvention.getValName(left),
+						Type.nullOf(left), NamingConvention.getValName(right), Type.nullOf(right)));
 	}
 
 	@Override
 	public void visit(Column tableColumn) {
+		referTableToColumn(tableColumn);
+		Value.declareFunction(index, tableColumn, Type.get(tableColumn), alias);
 		String columnName = tableColumn.getColumnName();
 		if ("TRUE".equalsIgnoreCase(columnName)) {
-			Value.declareFunction(sb, tableColumn, Type.get(tableColumn));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) TRUE))))";
-			System.out.println(
-					String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(tableColumn)));
+			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
 			return;
 		}
 		if ("FALSE".equalsIgnoreCase(columnName)) {
-			Value.declareFunction(sb, tableColumn, Type.get(tableColumn));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) FALSE))))";
-			System.out.println(
-					String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(tableColumn)));
+			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
 			return;
 		}
 		{
-			return;
+			String tableName = tableColumn.getTable().getName();
+			if (columnName.equals(tableName + "_id")) {
+				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-id x)))))";
+				System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableName));
+				return;
+			}
+			{
+				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%4$s x)))))";
+				System.out.println(
+						String.format(def, index, NamingConvention.getValName(tableColumn), tableName, columnName));
+				return;
+			}
 		}
+	}
+
+	private void referTableToColumn(Column tableColumn) {
+		tableColumn.setTable(new Table(sourceEntity.getName()));
 	}
 
 	@Override
@@ -443,8 +497,19 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(CaseExpression caseExpression) {
-		// TODO Auto-generated method stub
-
+		Value.declareFunction(index, caseExpression, Type.get(caseExpression), alias);
+		Expression when = caseExpression.getWhenClauses().get(0).getWhenExpression();
+		Expression then = caseExpression.getWhenClauses().get(0).getThenExpression();
+		Expression elze = caseExpression.getElseExpression();
+		when.accept(this);
+		then.accept(this);
+		elze.accept(this);
+		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (= (val-%1$s-%3$s x) (val-%1$s-%4$s x))))))";
+		System.out.println(String.format(def, index, NamingConvention.getValName(when),
+				NamingConvention.getValName(caseExpression), NamingConvention.getValName(then)));
+		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (or (= (= (val-%1$s-%2$s x) FALSE) (= (= (val-%1$s-%2$s x) NULL)) (= (val-%1$s-%3$s x) (val-%1$s-%4$s x))))))";
+		System.out.println(String.format(def2, index, NamingConvention.getValName(when),
+				NamingConvention.getValName(caseExpression), NamingConvention.getValName(elze)));
 	}
 
 	@Override
@@ -455,8 +520,31 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(ExistsExpression existsExpression) {
-		// TODO Auto-generated method stub
-
+		Value.declareFunction(index, existsExpression, Type.get(existsExpression), alias);
+		Expression source = existsExpression.getRightExpression();
+		SubSelect ss = (SubSelect) source;
+		SelectVisitor sv = new SelectVisitor();
+		Select sel = new Select();
+		sel.setSelectBody(ss.getSelectBody());
+		sel.accept(sv);
+		if (existsExpression.isNot()) {
+			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (exists ((y Int)) (index-%3$s y))))))";
+			System.out.println(String.format(def, index, NamingConvention.getValName(existsExpression),
+					NamingConvention.getSelName(ss.getSelectBody())));
+			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (not (exists ((y Int)) (index-%3$s y)))))))";
+			System.out.println(String.format(def2, index, NamingConvention.getValName(existsExpression),
+					NamingConvention.getSelName(ss.getSelectBody())));
+			return;
+		}
+		{
+			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (exists ((y Int)) (index-%3$s y))))))";
+			System.out.println(String.format(def, index, NamingConvention.getValName(existsExpression),
+					NamingConvention.getSelName(ss.getSelectBody())));
+			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (not (exists ((y Int)) (index-%3$s y)))))))";
+			System.out.println(String.format(def2, index, NamingConvention.getValName(existsExpression),
+					NamingConvention.getSelName(ss.getSelectBody())));
+			return;
+		}
 	}
 
 	@Override
@@ -479,37 +567,37 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(BitwiseAnd bitwiseAnd) {
+		Value.declareFunction(index, bitwiseAnd, Type.get(bitwiseAnd), alias);
 		Expression left = bitwiseAnd.getLeftExpression();
 		Expression right = bitwiseAnd.getRightExpression();
-		Value.declareFunction(sb, bitwiseAnd, Type.get(bitwiseAnd));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(bitwiseAnd),
+		System.out.println(String.format(def, index, NamingConvention.getValName(bitwiseAnd),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (or (= (val-%1$s-%3$s x) FALSE) (= (val-%1$s-%4$s x) FALSE))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(bitwiseAnd),
+		System.out.println(String.format(def2, index, NamingConvention.getValName(bitwiseAnd),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) TRUE)))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(bitwiseAnd),
+		System.out.println(String.format(def3, index, NamingConvention.getValName(bitwiseAnd),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 	}
 
 	@Override
 	public void visit(BitwiseOr bitwiseOr) {
+		Value.declareFunction(index, bitwiseOr, Type.get(bitwiseOr), alias);
 		Expression left = bitwiseOr.getLeftExpression();
 		Expression right = bitwiseOr.getRightExpression();
-		Value.declareFunction(sb, bitwiseOr, Type.get(bitwiseOr));
 		left.accept(this);
 		right.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (or (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(bitwiseOr),
+		System.out.println(String.format(def, index, NamingConvention.getValName(bitwiseOr),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (and (= (val-%1$s-%3$s x) FALSE) (= (val-%1$s-%4$s x) FALSE))))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(bitwiseOr),
+		System.out.println(String.format(def2, index, NamingConvention.getValName(bitwiseOr),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (or (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) FALSE) (= (val-%1$s-%4$s x) NULL)) (and (= (val-%1$s-%3$s x) NULL) (= (val-%1$s-%4$s x) FALSE)))))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(bitwiseOr),
+		System.out.println(String.format(def3, index, NamingConvention.getValName(bitwiseOr),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
 	}
 
@@ -641,18 +729,18 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NotExpression aThis) {
+		Value.declareFunction(index, aThis, Type.get(aThis), alias);
 		Expression expr = aThis.getExpression();
-		Value.declareFunction(sb, aThis, Type.get(aThis));
 		expr.accept(this);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (= (val-%1$s-%3$s x) FALSE)))))";
-		System.out.println(String.format(def, NamingConvention.getSelName(sb), NamingConvention.getValName(aThis),
-				NamingConvention.getValName(expr)));
+		System.out.println(
+				String.format(def, index, NamingConvention.getValName(aThis), NamingConvention.getValName(expr)));
 		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (= (val-%1$s-%3$s x) TRUE)))))";
-		System.out.println(String.format(def2, NamingConvention.getSelName(sb), NamingConvention.getValName(aThis),
-				NamingConvention.getValName(expr)));
+		System.out.println(
+				String.format(def2, index, NamingConvention.getValName(aThis), NamingConvention.getValName(expr)));
 		String def3 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) NULL) (= (val-%1$s-%3$s x) NULL)))))";
-		System.out.println(String.format(def3, NamingConvention.getSelName(sb), NamingConvention.getValName(aThis),
-				NamingConvention.getValName(expr)));
+		System.out.println(
+				String.format(def3, index, NamingConvention.getValName(aThis), NamingConvention.getValName(expr)));
 	}
 
 	@Override
@@ -727,4 +815,12 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	}
 
+	public void setAlias(Alias alias) {
+		this.alias = alias;
+	}
+
+	public void setSource(Entity entity) {
+		this.sourceEntity = entity;
+	}
+	
 }
