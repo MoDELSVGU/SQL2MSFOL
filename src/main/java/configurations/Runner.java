@@ -36,6 +36,7 @@ public class Runner {
 		sql2msfol.formalizeDataModel();
 		NamingConvention.reset();
 		DataModelHolder.setDataModel(sql2msfol.getDataModel());
+		DataModelHolder.setContext(c.getContext());
 		sql2msfol.map(c.getSql());
 
 	}
