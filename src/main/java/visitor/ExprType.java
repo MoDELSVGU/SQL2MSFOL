@@ -314,7 +314,7 @@ public class ExprType implements ExpressionVisitor {
 			String tableName = tableColumn.getTable().getName();
 			if (DmUtils.isClass(DataModelHolder.getDataModel(), tableName)) {
 				if (columnName.equals(tableName + "_id")) {
-					this.type = "Int";
+					this.type = "Classifier";
 					return;
 				}
 				{
@@ -328,7 +328,8 @@ public class ExprType implements ExpressionVisitor {
 				String leftEntity = a.getRightEntityName();
 				if (DmUtils.isClass(DataModelHolder.getDataModel(), leftEntity)) {
 					if (DmUtils.isPropertyOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
-						this.type = DmUtils.getAttributeType(DataModelHolder.getDataModel(), leftEntity, columnName);
+						this.type = Type
+								.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), leftEntity, columnName));
 					}
 					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
 						this.type = "Classifier";
@@ -339,7 +340,8 @@ public class ExprType implements ExpressionVisitor {
 				String rightEntity = a.getLeftEntityName();
 				if (DmUtils.isClass(DataModelHolder.getDataModel(), rightEntity)) {
 					if (DmUtils.isPropertyOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {
-						this.type = DmUtils.getAttributeType(DataModelHolder.getDataModel(), rightEntity, columnName);
+						this.type = Type
+								.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), rightEntity, columnName));
 						return;
 					}
 					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {

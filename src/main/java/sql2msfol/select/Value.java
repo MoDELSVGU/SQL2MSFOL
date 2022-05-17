@@ -64,7 +64,7 @@ public class Value {
 		if (DmUtils.isClass(DataModelHolder.getDataModel(), end.getTargetClass())) {
 			Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), end.getTargetClass());
 			if (!(e instanceof EntityExtended)) {
-				String dec = "(declare-fun val-%1$s-%2$s (Int) Int)";
+				String dec = "(declare-fun val-%1$s-%2$s (Int) Classifier)";
 				System.out.println(String.format(dec, sourceAssociation.getName(), e.getName() + "_id"));
 				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 				System.out.println(
