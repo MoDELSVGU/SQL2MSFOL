@@ -52,7 +52,7 @@
 								<!-- automatically creates the classpath using all project dependencies, 
 									also adding the project build directory -->
 								<classpath />
-								<argument>launchers/Integration</argument>
+								<argument>configurations.Runner</argument>
 							</arguments>
 						</configuration>
 					</plugin>
