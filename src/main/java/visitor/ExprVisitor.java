@@ -1,7 +1,10 @@
 package visitor;
 
+import org.vgu.dm2schema.dm.Association;
+import org.vgu.dm2schema.dm.DmUtils;
 import org.vgu.dm2schema.dm.Entity;
 
+import datamodel.DataModelHolder;
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
@@ -95,6 +98,7 @@ public class ExprVisitor implements ExpressionVisitor {
 	private String index;
 	private Alias alias;
 	private Entity sourceEntity;
+	private Association sourceAssociation;
 
 	public void setIndex(String index) {
 		this.index = index;
@@ -456,37 +460,48 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(Column tableColumn) {
-		referTableToColumn(tableColumn);
-		Value.declareFunction(index, tableColumn, Type.get(tableColumn), alias);
 		String columnName = tableColumn.getColumnName();
 		if ("TRUE".equalsIgnoreCase(columnName)) {
+			Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) TRUE))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
 			return;
 		}
 		if ("FALSE".equalsIgnoreCase(columnName)) {
+			Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) FALSE))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
 			return;
 		}
 		{
+			referTableToColumn(tableColumn);
 			String tableName = tableColumn.getTable().getName();
-			if (columnName.equals(tableName + "_id")) {
-				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-id x)))))";
-				System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableName));
-				return;
-			}
-			{
-				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%4$s x)))))";
-				System.out.println(
-						String.format(def, index, NamingConvention.getValName(tableColumn), tableName, columnName));
-				return;
+			String sourceName = (sourceEntity != null) ? sourceEntity.getName() : sourceAssociation.getName();
+			if (!index.equals(sourceName)) {
+				Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
+				if (columnName.equals(tableName + "_id")) {
+					String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-id x)))))";
+					System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableName));
+					return;
+				}
+				{
+					String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%4$s x)))))";
+					System.out.println(
+							String.format(def, index, NamingConvention.getValName(tableColumn), tableName, columnName));
+					return;
+				}
+			} else {
+				NamingConvention.saveVal(columnName, tableColumn);
 			}
 		}
 	}
 
 	private void referTableToColumn(Column tableColumn) {
-		tableColumn.setTable(new Table(sourceEntity.getName()));
+		if (sourceEntity != null) {
+			tableColumn.setTable(new Table(sourceEntity.getName()));
+		} else {
+			tableColumn.setTable(new Table(sourceAssociation.getName()));
+		}
 	}
 
 	@Override
@@ -819,8 +834,12 @@ public class ExprVisitor implements ExpressionVisitor {
 		this.alias = alias;
 	}
 
-	public void setSource(Entity entity) {
+	public void setSourceEntity(Entity entity) {
 		this.sourceEntity = entity;
 	}
-	
+
+	public void setSourceAssociation(Association association) {
+		this.sourceAssociation = association;
+	}
+
 }

@@ -1,5 +1,6 @@
 package visitor;
 
+import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DmUtils;
 import org.vgu.dm2schema.dm.Entity;
 
@@ -60,6 +61,8 @@ import sql2msfol.select.Value;
 import sql2msfol.utils.StatementUtils;
 
 public class SelectVisitor implements StatementVisitor {
+
+	private Alias alias;
 
 	@Override
 	public void visit(SavepointStatement savepointStatement) {
@@ -204,47 +207,77 @@ public class SelectVisitor implements StatementVisitor {
 		PlainSelect ps = (PlainSelect) select.getSelectBody();
 		try {
 			if (StatementUtils.noFromClause(select)) {
-				Index.declareFunction(select, SelectPattern.ONLY_SELECT);
+				/* SELECT */
+				Index.declareFunction(select, alias, SelectPattern.ONLY_SELECT);
 				Index.defineFunction(select, SelectPattern.ONLY_SELECT);
-				Entity tb = DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(ps));
+				String index = NamingConvention.getSelName(ps);
 				ps.getSelectItems().forEach(si -> {
 					SelectExpressionItem sei = (SelectExpressionItem) si;
 					Expression expr = sei.getExpression();
 					Alias alias = sei.getAlias();
-					Value.defineFunction(tb, expr, alias);
+					Value.defineFunction(expr, alias, index);
 				});
 				return;
 			}
 
 			if (StatementUtils.noJoinClause(select)) {
 				visitFromItem(select);
+				FromItem fi = ps.getFromItem();
+				this.alias = fi.getAlias();
 				if (StatementUtils.noWhereClause(select)) {
-					Index.declareFunction(select, SelectPattern.SELECT_FROM);
+					/* SELECT FROM */
+					Index.declareFunction(select, alias, SelectPattern.SELECT_FROM);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM);
-					Entity tb = DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(ps));
-					ps.getSelectItems().forEach(si -> {
-						SelectExpressionItem sei = (SelectExpressionItem) si;
-						Expression expr = sei.getExpression();
-						Alias alias = sei.getAlias();
-						Value.defineFunction(tb, expr, alias);
-					});
-					return;
+					Entity sourceEntity = getEntity(fi);
+					String index = NamingConvention.getSelName(ps);
+					if (sourceEntity != null) {
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceEntity, expr, alias, index);
+						});
+						return;
+					}
+					Association sourceAssociation = getAssociation(fi);
+					{
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceAssociation, expr, alias, index);
+						});
+						return;
+					}
 				}
 
 				{
-					FromItem fi = ps.getFromItem();
+					/* SELECT FROM WHERE */
 					Expression where = ps.getWhere();
-					Value.defineFunction(getEntity(fi), where, null);
-					Index.declareFunction(select, SelectPattern.SELECT_FROM_WHERE);
+					Value.defineFunction(getEntity(fi), where, null, getEntity(fi).getName());
+					Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_WHERE);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM_WHERE);
-					Entity tb = DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(ps));
-					ps.getSelectItems().forEach(si -> {
-						SelectExpressionItem sei = (SelectExpressionItem) si;
-						Expression expr = sei.getExpression();
-						Alias alias = sei.getAlias();
-						Value.defineFunction(tb, expr, alias);
-					});
-					return;
+					Entity sourceEntity = getEntity(fi);
+					String index = NamingConvention.getSelName(ps);
+					if (sourceEntity != null) {
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceEntity, expr, alias, index);
+						});
+						return;
+					}
+					Association sourceAssociation = getAssociation(fi);
+					{
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceAssociation, expr, alias, index);
+						});
+						return;
+					}
 				}
 			}
 
@@ -253,28 +286,74 @@ public class SelectVisitor implements StatementVisitor {
 				visitJoin(select);
 				if (StatementUtils.noWhereClause(select)) {
 					if (StatementUtils.noOnClause(select)) {
-						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN);
+						/* SELECT FROM JOIN */
+						Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_JOIN);
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN);
+						String index = NamingConvention.getSelName(ps);
+						Association sourceAssociation = getAssociation(NamingConvention.getSelJoinName(index));
+						Value.defineFunction(sourceAssociation);
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceAssociation, expr, alias, index);
+						});
 						return;
 					}
 
 					{
-						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN_ON);
+						/* SELECT FROM JOIN ON */
+						Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_JOIN_ON);
+						String index = NamingConvention.getSelName(ps);
+						Association sourceAssociation = getAssociation(NamingConvention.getSelJoinName(index));
+						Value.defineFunction(sourceAssociation);
+						Expression on = ps.getJoins().get(0).getOnExpression();
+						Value.defineFunction(sourceAssociation, on, null, sourceAssociation.getName());
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_ON);
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceAssociation, expr, alias, index);
+						});
 						return;
 					}
 				}
 
 				{
 					if (StatementUtils.noOnClause(select)) {
-						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN_WHERE);
+						Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_JOIN_WHERE);
+						String index = NamingConvention.getSelName(ps);
+						Association sourceAssociation = getAssociation(NamingConvention.getSelJoinName(index));
+						Value.defineFunction(sourceAssociation);
+						Expression where = ps.getWhere();
+						Value.defineFunction(sourceAssociation, where, null, sourceAssociation.getName());
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_WHERE);
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceAssociation, expr, alias, index);
+						});
 						return;
 					}
 
 					{
-						Index.declareFunction(select, SelectPattern.SELECT_FROM_JOIN_ON_WHERE);
+						Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_JOIN_ON_WHERE);
+						String index = NamingConvention.getSelName(ps);
+						Association sourceAssociation = getAssociation(NamingConvention.getSelJoinName(index));
+						Value.defineFunction(sourceAssociation);
+						Expression on = ps.getJoins().get(0).getOnExpression();
+						Value.defineFunction(sourceAssociation, on, null, sourceAssociation.getName());
+						Expression where = ps.getWhere();
+						Value.defineFunction(sourceAssociation, where, null, sourceAssociation.getName());
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_ON_WHERE);
+						ps.getSelectItems().forEach(si -> {
+							SelectExpressionItem sei = (SelectExpressionItem) si;
+							Expression expr = sei.getExpression();
+							Alias alias = sei.getAlias();
+							Value.defineFunction(sourceAssociation, expr, alias, index);
+						});
 						return;
 					}
 				}
@@ -285,33 +364,58 @@ public class SelectVisitor implements StatementVisitor {
 
 	}
 
+	private Association getAssociation(String name) {
+		try {
+			return DmUtils.getAssociation(DataModelHolder.getDataModel(), name);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private Association getAssociation(FromItem fi) {
+		if (fi instanceof Table) {
+			Table tb = (Table) fi;
+			return DmUtils.getAssociation(DataModelHolder.getDataModel(), tb.getName());
+		} else {
+			try {
+				return DmUtils.getAssociation(DataModelHolder.getDataModel(), NamingConvention.getSelName(fi));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+	
 	private Entity getEntity(FromItem fi) {
 		if (fi instanceof Table) {
 			Table tb = (Table) fi;
 			return DmUtils.getEntity(DataModelHolder.getDataModel(), tb.getName());
-		}
-		else {
+		} else {
 			try {
 				return DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(fi));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		
 		return null;
 	}
 
 	private void visitJoin(Select select) {
 		PlainSelect ps = (PlainSelect) select.getSelectBody();
 		FromItem fi = ps.getJoins().get(0).getRightItem();
+		Alias alias = fi.getAlias();
 		FromVisitor fiv = new FromVisitor();
+		fiv.setAlias(alias);
 		fi.accept(fiv);
 	}
 
 	private void visitFromItem(Select select) {
 		PlainSelect ps = (PlainSelect) select.getSelectBody();
 		FromItem fi = ps.getFromItem();
+		Alias alias = fi.getAlias();
 		FromVisitor fiv = new FromVisitor();
+		fiv.setAlias(alias);
 		fi.accept(fiv);
 	}
 
@@ -421,5 +525,9 @@ public class SelectVisitor implements StatementVisitor {
 	public void visit(AlterSystemStatement alterSystemStatement) {
 		// TODO Auto-generated method stub
 
+	}
+
+	public void setAlias(Alias alias) {
+		this.alias = alias;
 	}
 }

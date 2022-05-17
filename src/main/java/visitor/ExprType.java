@@ -1,5 +1,6 @@
 package visitor;
 
+import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DmUtils;
 
 import datamodel.DataModelHolder;
@@ -302,14 +303,41 @@ public class ExprType implements ExpressionVisitor {
 		}
 		{
 			String tableName = tableColumn.getTable().getName();
-			if (columnName.equals(tableName+"_id")) {
-//				this.type = "Classifier";
-				this.type = "Int";
-				return;
+			if (DmUtils.isClass(DataModelHolder.getDataModel(), tableName)) {
+				if (columnName.equals(tableName + "_id")) {
+					this.type = "Int";
+					return;
+				}
+				{
+					this.type = Type
+							.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), tableName, columnName));
+					return;
+				}
 			}
 			{
-				this.type = Type.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), tableName, columnName));
-				return;
+				Association a = DmUtils.getAssociation(DataModelHolder.getDataModel(), tableName);
+				String leftEntity = a.getRightEntityName();
+				if (DmUtils.isClass(DataModelHolder.getDataModel(), leftEntity)) {
+					if (DmUtils.isPropertyOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
+						this.type = DmUtils.getAttributeType(DataModelHolder.getDataModel(), leftEntity, columnName);
+					}
+					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
+						this.type = "Int";
+						return;
+					}
+				}
+
+				String rightEntity = a.getLeftEntityName();
+				if (DmUtils.isClass(DataModelHolder.getDataModel(), rightEntity)) {
+					if (DmUtils.isPropertyOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {
+						this.type = DmUtils.getAttributeType(DataModelHolder.getDataModel(), rightEntity, columnName);
+						return;
+					}
+					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {
+						this.type = "Int";
+						return;
+					}
+				}
 			}
 		}
 	}

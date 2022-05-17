@@ -15,49 +15,47 @@ public class DM2MSFOL {
 
 	private static void formalize(Association a) {
 		String associationName = a.getName();
-		String associationName_lowercase = a.getName();
-		String leftEntityName_lowercase = a.getLeftEntityName();
-		String rightEntityName_lowercase = a.getRightEntityName();
+		String leftEntityName = a.getLeftEntityName();
+		String rightEntityName = a.getRightEntityName();
 		String assoc_dec = "(declare-fun index-%s (Int) (Bool))";
-		System.out.println(String.format(assoc_dec, associationName_lowercase));
-		String assoc_def = "(assert (forall ((x Int)) (=> (index-%s x) (exists ((c1 Classifier) (c2 Classifier)) (and (%s c1 c2) (= c1 (id (left x))) (= c2 (id (right x))))))))";
-		System.out.println(String.format(assoc_def, associationName_lowercase, associationName));
-		String assoc_def2 = "(assert (forall ((c1 Classifier) (c2 Classifier)) (=> (%s c1 c2) (exists ((x Int)) (and (index-%s x) (= c1 (id (left x))) (= c2 (id (right x))))))))";
-		System.out.println(String.format(assoc_def2, associationName, associationName_lowercase));
+		System.out.println(String.format(assoc_dec, associationName));
+		String assoc_def = "(assert (forall ((x Int)) (=> (index-%1$s x) (exists ((c1 Classifier) (c2 Classifier)) (and (%1$s c1 c2) (= c1 (id (left x))) (= c2 (id (right x))))))))";
+		System.out.println(String.format(assoc_def, associationName));
+		String assoc_def2 = "(assert (forall ((c1 Classifier) (c2 Classifier)) (=> (%1$s c1 c2) (exists ((x Int)) (and (index-%1$s x) (= c1 (id (left x))) (= c2 (id (right x))))))))";
+		System.out.println(String.format(assoc_def2, associationName));
 		String assoc_def3 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y))))))))";
-		System.out.println(String.format(assoc_def3, associationName_lowercase));
+		System.out.println(String.format(assoc_def3, associationName));
 		String assoc_def4 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (id (left x))))))";
-		System.out.println(String.format(assoc_def4, associationName_lowercase, leftEntityName_lowercase));
+		System.out.println(String.format(assoc_def4, associationName, leftEntityName));
 		String assoc_def5 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (id (right x))))))";
-		System.out.println(String.format(assoc_def5, associationName_lowercase, rightEntityName_lowercase));
+		System.out.println(String.format(assoc_def5, associationName, rightEntityName));
 	}
 
 	private static void formalize(Entity c) {
 		String name = c.getName();
-		String name_lowercase = c.getName();
 		String index_dec = "(declare-fun index-%s (Int) Bool)";
-		System.out.println(String.format(index_dec, name_lowercase));
-		String id_dec = "(declare-fun val-%s-id (Int) Classifier)";
-		System.out.println(String.format(id_dec, name_lowercase));
-		String id_def = "(assert (forall ((x Int)) (=> (index-%s x) (exists ((c Classifier)) (and (%s x) (= c (id x)))))))";
-		System.out.println(String.format(id_def, name_lowercase, name));
-		String id_def2 = "(assert (forall ((c Classifier)) (=> (%s x) (exists ((x Int)) (and (index-%s x) (= c (id x)))))))";
-		System.out.println(String.format(id_def2, name, name_lowercase));
+		System.out.println(String.format(index_dec, name));
+		String id_dec = "(declare-fun val-%1$s-%1$s_id (Int) Classifier)";
+		System.out.println(String.format(id_dec, name));
+		String id_def = "(assert (forall ((x Int)) (=> (index-%1$s x) (exists ((c Classifier)) (and (%1$s x) (= c (id x)))))))";
+		System.out.println(String.format(id_def, name));
+		String id_def2 = "(assert (forall ((c Classifier)) (=> (%1$s x) (exists ((x Int)) (and (index-%1$s x) (= c (id x)))))))";
+		System.out.println(String.format(id_def2, name));
 		String id_def3 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s x) (index-%1$s y) (not (= x y))) (not (= (id x) (id y))))))";
-		System.out.println(String.format(id_def3, name_lowercase));
+		System.out.println(String.format(id_def3, name));
 		String id_def4 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-id x) (id x)))))";
-		System.out.println(String.format(id_def4, name_lowercase));
+		System.out.println(String.format(id_def4, name));
 		c.getAttributes().forEach(a -> formalize(c, a));
 	}
 
 	private static void formalize(Entity c, Attribute a) {
-		String entityName_lowercase = c.getName();
-		String attributeName_lowercase = a.getName();
+		String entityName = c.getName();
+		String attributeName = a.getName();
 		String type = "String".equals(a.getType()) ? "String" : "Int";
 		String att_dec = "(declare-fun val-%s-%s (Int) %s)";
-		System.out.println(String.format(att_dec, entityName_lowercase, attributeName_lowercase, type));
+		System.out.println(String.format(att_dec, entityName, attributeName, type));
 		String att_def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (id x)))))";
-		System.out.println(String.format(att_def, entityName_lowercase, attributeName_lowercase));
+		System.out.println(String.format(att_def, entityName, attributeName));
 	}
 
 	private static void init() {

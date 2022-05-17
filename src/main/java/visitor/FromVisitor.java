@@ -1,5 +1,6 @@
 package visitor;
 
+import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItemVisitor;
 import net.sf.jsqlparser.statement.select.LateralSubSelect;
@@ -11,6 +12,8 @@ import net.sf.jsqlparser.statement.select.TableFunction;
 import net.sf.jsqlparser.statement.select.ValuesList;
 
 public class FromVisitor implements FromItemVisitor {
+	
+	private Alias alias;
 
 	@Override
 	public void visit(Table tableName) {
@@ -22,6 +25,7 @@ public class FromVisitor implements FromItemVisitor {
 		Select newSelect = new Select();
 		newSelect.setSelectBody(subSelect.getSelectBody());
 		SelectVisitor sv = new SelectVisitor();
+		sv.setAlias(alias);
 		newSelect.accept(sv);
 	}
 
@@ -53,6 +57,10 @@ public class FromVisitor implements FromItemVisitor {
 	public void visit(ParenthesisFromItem aThis) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public void setAlias(Alias alias) {
+		this.alias = alias;
 	}
 
 }

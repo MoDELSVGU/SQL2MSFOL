@@ -13,7 +13,7 @@
 		],
 		"ends": [
 			{
-				"association": "Enrollment",
+				"association": "Enrolment",
 				"name": "students",
 				"target": "Student",
 				"opp": "lecturers",
@@ -35,7 +35,7 @@
 		],
 		"ends": [
 			{
-				"association": "Enrollment",
+				"association": "Enrolment",
 				"name": "lecturers",
 				"target": "Lecturer",
 				"opp": "students",

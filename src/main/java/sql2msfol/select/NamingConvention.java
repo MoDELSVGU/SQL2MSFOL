@@ -4,13 +4,18 @@ import java.util.HashMap;
 
 import org.vgu.dm2schema.dm.DataModel;
 import org.vgu.dm2schema.dm.DmUtils;
+import org.vgu.dm2schema.dm.End;
 import org.vgu.dm2schema.dm.Entity;
+import org.vgu.dm2schema.dm.Multiplicity;
 
+import datamodel.AssociationExtended;
 import datamodel.AttributeExtended;
 import datamodel.DataModelHolder;
+import datamodel.EntityExtended;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
@@ -18,6 +23,7 @@ public class NamingConvention {
 	private static int selCounter = 0;
 	private static int valCounter = 0;
 	private static HashMap<SelectBody, String> selIndices = new HashMap<SelectBody, String>();
+	private static HashMap<String, String> selJoinIndices = new HashMap<String, String>();
 	private static HashMap<Expression, String> valIndices = new HashMap<Expression, String>();
 
 	public static void increaseSelCounter() {
@@ -44,23 +50,76 @@ public class NamingConvention {
 		valIndices.put(expr, name);
 		addNewAttribute(index, name, expr);
 	}
+	
+	public static void saveVal(String name, Expression expr) {
+		valIndices.put(expr, name);
+	}
 
 	private static void addNewAttribute(String index, String name, Expression expr) {
 		AttributeExtended att = new AttributeExtended();
 		att.setName(name);
 		att.setType(Type.get(expr));
-		Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), index);
-		e.getAttributes().add(att);
+		if (DmUtils.isClass(DataModelHolder.getDataModel(), index)) {
+			Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), index);
+			e.getAttributes().add(att);
+			return;
+		} 
+		{
+			AssociationExtended a = (AssociationExtended) DmUtils.getAssociation(DataModelHolder.getDataModel(), index);
+			a.getAttributes().add(att);
+			return;
+		}
 	}
 
-	public static void saveSelIndex(String name, SelectBody selectBody) {
+	public static void saveSelIndexEntity(String name, SelectBody selectBody) {
 		selIndices.put(selectBody, name);
 		addNewEntity(name);
+	}
+	
+	public static void saveSelIndexAssociation(String name, SelectBody selectBody) throws Exception {
+		selJoinIndices.put(getSelName(selectBody), name);
+		End left = getLeft(selectBody, name);
+		End right = getRight(selectBody, name);
+		left.setOpp(right.getName());
+		right.setOpp(left.getName());
+		addNewAssociation(left, right);
+	}
+
+	private static End getRight(SelectBody selectBody, String name) throws Exception {
+		End end = new End();
+		PlainSelect ps = (PlainSelect) selectBody;
+		FromItem fi = ps.getFromItem();
+		FromItem fi2 = ps.getJoins().get(0).getRightItem();
+		end.setAssociation(name);
+		end.setMult(Multiplicity.MANY);
+		end.setName("right");
+		end.setCurrentClass(getSelName(fi2));
+		end.setTargetClass(getSelName(fi));
+		return end;
+	}
+
+	private static End getLeft(SelectBody selectBody, String name) throws Exception {
+		End end = new End();
+		PlainSelect ps = (PlainSelect) selectBody;
+		FromItem fi = ps.getFromItem();
+		FromItem fi2 = ps.getJoins().get(0).getRightItem();
+		end.setAssociation(name);
+		end.setMult(Multiplicity.MANY);
+		end.setName("left");
+		end.setCurrentClass(getSelName(fi));
+		end.setTargetClass(getSelName(fi2));
+		return end;
+	}
+
+	private static void addNewAssociation(End left, End right) {
+		DataModel dm = DataModelHolder.getDataModel();
+		AssociationExtended a = new AssociationExtended(left, right);
+		dm.getAssociations().add(a);
 	}
 
 	private static void addNewEntity(String name) {
 		DataModel dm = DataModelHolder.getDataModel();
-		Entity e = new Entity();
+		EntityExtended e = new EntityExtended();
 		e.setClazz(name);
 		dm.getEntities().put(name, e);
 	}
@@ -80,6 +139,10 @@ public class NamingConvention {
 	public static String getSelName(SelectBody selectBody) {
 		return selIndices.get(selectBody);
 	}
+	
+	public static String getSelJoinName(String index) {
+		return selJoinIndices.get(index);
+	}
 
 	public static String getValName(Expression expr) {
 		return valIndices.get(expr);
@@ -90,5 +153,7 @@ public class NamingConvention {
 		selCounter = 0;
 		valIndices.clear();
 		selIndices.clear();
+		selJoinIndices.clear();
 	}
+
 }
