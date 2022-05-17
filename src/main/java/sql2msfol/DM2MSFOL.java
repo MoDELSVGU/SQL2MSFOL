@@ -19,9 +19,9 @@ public class DM2MSFOL {
 		String rightEnd = a.getLeftEnd();
 		String assoc_dec = "(declare-fun index-%s (Int) Bool)";
 		System.out.println(String.format(assoc_dec, associationName));
-		String assoc_dec2 = "(declare-fun val-%1$s-%2$s (Int) Int)";
+		String assoc_dec2 = "(declare-fun val-%1$s-%2$s (Int) Classifier)";
 		System.out.println(String.format(assoc_dec2, associationName, leftEnd));
-		String assoc_dec3 = "(declare-fun index-%s (Int) Int)";
+		String assoc_dec3 = "(declare-fun val-%1$s-%2$s (Int) Classifier)";
 		System.out.println(String.format(assoc_dec3, associationName, rightEnd));
 		String assoc_def = "(assert (forall ((x Int)) (=> (index-%1$s x) (exists ((c1 Classifier) (c2 Classifier)) (and (%1$s c1 c2) (= c1 (id (left x))) (= c2 (id (right x))))))))";
 		System.out.println(String.format(assoc_def, associationName));

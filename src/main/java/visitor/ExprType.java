@@ -110,7 +110,7 @@ public class ExprType implements ExpressionVisitor {
 	@Override
 	public void visit(NullValue nullValue) {
 		// TODO: Boolean for now!
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
@@ -215,12 +215,12 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(AndExpression andExpression) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(OrExpression orExpression) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
@@ -237,17 +237,17 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(EqualsTo equalsTo) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(GreaterThan greaterThan) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(GreaterThanEquals greaterThanEquals) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
@@ -264,7 +264,7 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(IsNullExpression isNullExpression) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
@@ -281,28 +281,28 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(MinorThan minorThan) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(MinorThanEquals minorThanEquals) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(NotEqualsTo notEqualsTo) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(Column tableColumn) {
 		String columnName = tableColumn.getColumnName();
 		if ("TRUE".equalsIgnoreCase(columnName)) {
-			this.type = "Bool";
+			this.type = "BOOL";
 			return;
 		}
 		if ("FALSE".equalsIgnoreCase(columnName)) {
-			this.type = "Bool";
+			this.type = "BOOL";
 			return;
 		}
 		if (DataModelHolder.matchContext(tableColumn)) {
@@ -378,7 +378,7 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(ExistsExpression existsExpression) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
@@ -401,12 +401,12 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(BitwiseAnd bitwiseAnd) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
 	public void visit(BitwiseOr bitwiseOr) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
@@ -537,7 +537,7 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(NotExpression aThis) {
-		this.type = "Bool";
+		this.type = "BOOL";
 	}
 
 	@Override
