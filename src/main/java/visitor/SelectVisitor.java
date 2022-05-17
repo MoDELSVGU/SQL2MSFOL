@@ -254,10 +254,15 @@ public class SelectVisitor implements StatementVisitor {
 				{
 					/* SELECT FROM WHERE */
 					Expression where = ps.getWhere();
-					Value.defineFunction(getEntity(fi), where, null, getEntity(fi).getName());
+					Entity sourceEntity = getEntity(fi);
+					if (sourceEntity != null) {
+						Value.defineFunction(getEntity(fi), where, null, getEntity(fi).getName());
+					} else {
+						Value.defineFunction(getAssociation(fi), where, null, getAssociation(fi).getName());
+					}
+					
 					Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_WHERE);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM_WHERE);
-					Entity sourceEntity = getEntity(fi);
 					String index = NamingConvention.getSelName(ps);
 					if (sourceEntity != null) {
 						ps.getSelectItems().forEach(si -> {

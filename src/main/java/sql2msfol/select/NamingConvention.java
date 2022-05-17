@@ -1,7 +1,9 @@
 package sql2msfol.select;
 
 import java.util.HashMap;
+import java.util.Set;
 
+import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DataModel;
 import org.vgu.dm2schema.dm.DmUtils;
 import org.vgu.dm2schema.dm.End;
@@ -65,8 +67,18 @@ public class NamingConvention {
 			return;
 		} 
 		{
-			AssociationExtended a = (AssociationExtended) DmUtils.getAssociation(DataModelHolder.getDataModel(), index);
-			a.getAttributes().add(att);
+			Association a = DmUtils.getAssociation(DataModelHolder.getDataModel(), index);
+			if (a instanceof AssociationExtended) {
+				((AssociationExtended) a).getAttributes().add(att);
+			} else {
+				Set<AssociationExtended> assocs = DataModelHolder.getAssociations();
+				for (AssociationExtended assoc : assocs) {
+					if (assoc.getName().equals(a.getName())) {
+						assoc.getAttributes().add(att);
+						break;
+					}
+				}
+			}
 			return;
 		}
 	}

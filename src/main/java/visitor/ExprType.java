@@ -3,7 +3,9 @@ package visitor;
 import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DmUtils;
 
+import configurations.Context;
 import datamodel.DataModelHolder;
+import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -85,7 +87,9 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.SubSelect;
+import sql2msfol.select.NamingConvention;
 import sql2msfol.select.Type;
+import sql2msfol.select.Value;
 
 public class ExprType implements ExpressionVisitor {
 
@@ -299,6 +303,11 @@ public class ExprType implements ExpressionVisitor {
 		}
 		if ("FALSE".equalsIgnoreCase(columnName)) {
 			this.type = "Bool";
+			return;
+		}
+		if (DataModelHolder.matchContext(tableColumn)) {
+			Context ctx = DataModelHolder.get(tableColumn);
+			this.type = ctx.getType();
 			return;
 		}
 		{

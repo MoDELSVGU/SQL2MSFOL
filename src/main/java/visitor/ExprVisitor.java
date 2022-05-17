@@ -4,6 +4,7 @@ import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DmUtils;
 import org.vgu.dm2schema.dm.Entity;
 
+import configurations.Context;
 import datamodel.DataModelHolder;
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.AnalyticExpression;
@@ -471,6 +472,13 @@ public class ExprVisitor implements ExpressionVisitor {
 			Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) FALSE))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
+			return;
+		}
+		if (DataModelHolder.matchContext(tableColumn)) {
+			Context ctx = DataModelHolder.get(tableColumn);
+			Value.declareFunction(index, tableColumn, ctx.getType(), new Alias(columnName));
+			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) %3$s))))";
+			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableColumn));
 			return;
 		}
 		{
