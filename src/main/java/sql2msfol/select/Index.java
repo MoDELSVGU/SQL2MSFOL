@@ -62,7 +62,7 @@ public class Index {
 			System.out.println(String.format(definition, NamingConvention.getSelName(ps)));
 			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s-join y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
-			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x) (= z (right x))))))))";
+			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));
 			String definition4 = "(assert (forall ((y Int) (z Int)) (=> (and (index-%1$s y) (index-%2$s z)) (exists ((x Int)) (and (index-%3$s-join x) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition4, NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem()), NamingConvention.getSelName(ps)));
@@ -73,7 +73,7 @@ public class Index {
 			System.out.println(String.format(definition, NamingConvention.getSelName(ps), NamingConvention.getValName(ps.getJoins().get(0).getOnExpression())));
 			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
-			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x) (= z (right x))))))))";
+			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));
 			String definition4 = "(assert (forall ((y Int) (z Int)) (=> (and (index-%1$s y) (index-%2$s z)) (exists ((x Int)) (and (index-%3$s-join x) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition4, NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem()), NamingConvention.getSelName(ps)));
@@ -84,7 +84,7 @@ public class Index {
 			System.out.println(String.format(definition, NamingConvention.getSelName(ps), NamingConvention.getValName(ps.getWhere())));
 			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
-			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x) (= z (right x))))))))";
+			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));
 			String definition4 = "(assert (forall ((y Int) (z Int)) (=> (and (index-%1$s y) (index-%2$s z)) (exists ((x Int)) (and (index-%3$s-join x) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition4, NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem()), NamingConvention.getSelName(ps)));
@@ -95,7 +95,7 @@ public class Index {
 			System.out.println(String.format(definition, NamingConvention.generateSelName(), NamingConvention.getValName(ps.getJoins().get(0).getOnExpression()), NamingConvention.getValName(ps.getWhere())));
 			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
-			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x) (= z (right x))))))))";
+			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));
 			String definition4 = "(assert (forall ((y Int) (z Int)) (=> (and (index-%1$s y) (index-%2$s z)) (exists ((x Int)) (and (index-%3$s-join x) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition4, NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem()), NamingConvention.getSelName(ps)));
