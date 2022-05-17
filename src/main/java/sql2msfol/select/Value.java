@@ -84,12 +84,12 @@ public class Value {
 			Association a = DmUtils.getAssociation(DataModelHolder.getDataModel(), end.getTargetClass());
 			End left = a.getLeft();
 			String dec = "(declare-fun val-%1$s-%2$s (Int) %3$s)";
-			System.out.println(String.format(dec, sourceAssociation.getName(), left.getName(), "Int"));
+			System.out.println(String.format(dec, sourceAssociation.getName(), left.getName(), "Classifier"));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 			System.out.println(String.format(def, sourceAssociation.getName(), left.getName(), a.getName(), direction));
 			End right = a.getRight();
 			String dec2 = "(declare-fun val-%1$s-%2$s (Int) %3$s)";
-			System.out.println(String.format(dec2, sourceAssociation.getName(), right.getName(), "Int"));
+			System.out.println(String.format(dec2, sourceAssociation.getName(), right.getName(), "Classifier"));
 			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 			System.out
 					.println(String.format(def2, sourceAssociation.getName(), right.getName(), a.getName(), direction));
