@@ -4,9 +4,6 @@ target/
 # Settings folder
 .settings/
 
-# Target folder
-.classpath
-
 # Compiled class file
 *.class
 
