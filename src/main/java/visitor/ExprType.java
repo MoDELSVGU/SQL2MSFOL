@@ -307,7 +307,7 @@ public class ExprType implements ExpressionVisitor {
 		}
 		if (DataModelHolder.matchContext(tableColumn)) {
 			Context ctx = DataModelHolder.get(tableColumn);
-			this.type = ctx.getType();
+			this.type = "Classifier";
 			return;
 		}
 		{
@@ -331,7 +331,7 @@ public class ExprType implements ExpressionVisitor {
 						this.type = DmUtils.getAttributeType(DataModelHolder.getDataModel(), leftEntity, columnName);
 					}
 					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
-						this.type = "Int";
+						this.type = "Classifier";
 						return;
 					}
 				}
@@ -343,7 +343,7 @@ public class ExprType implements ExpressionVisitor {
 						return;
 					}
 					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {
-						this.type = "Int";
+						this.type = "Classifier";
 						return;
 					}
 				}

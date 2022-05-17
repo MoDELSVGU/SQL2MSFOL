@@ -476,7 +476,13 @@ public class ExprVisitor implements ExpressionVisitor {
 		}
 		if (DataModelHolder.matchContext(tableColumn)) {
 			Context ctx = DataModelHolder.get(tableColumn);
-			Value.declareFunction(index, tableColumn, ctx.getType(), new Alias(columnName));
+			String type;
+			if (ctx.getType() == "String" || ctx.getType() == "Int") {
+				type = ctx.getType();
+			} else {
+				type = "Classifier";
+			}
+			Value.declareFunction(index, tableColumn, type, new Alias(columnName));
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) %3$s))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableColumn));
 			return;
