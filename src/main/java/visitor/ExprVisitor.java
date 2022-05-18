@@ -505,7 +505,13 @@ public class ExprVisitor implements ExpressionVisitor {
 					return;
 				}
 			} else {
-				NamingConvention.saveVal(columnName, tableColumn);
+				if (DataModelHolder.getAssociationExtended(tableName) != null) {
+					if (DmUtils.getAssociation(DataModelHolder.getDataModel(), tableName) == null) {
+						NamingConvention.saveVal(columnName, tableColumn);
+					}
+				} else {
+					NamingConvention.saveVal(tableName+"-"+columnName, tableColumn);
+				}
 			}
 		}
 	}

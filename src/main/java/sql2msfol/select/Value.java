@@ -64,17 +64,17 @@ public class Value {
 		if (DmUtils.isClass(DataModelHolder.getDataModel(), end.getTargetClass())) {
 			Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), end.getTargetClass());
 			if (!(e instanceof EntityExtended)) {
-				String dec = "(declare-fun val-%1$s-%2$s (Int) Classifier)";
-				System.out.println(String.format(dec, sourceAssociation.getName(), e.getName() + "_id"));
-				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
+				String dec = "(declare-fun val-%1$s-%3$s-%2$s (Int) Classifier)";
+				System.out.println(String.format(dec, sourceAssociation.getName(), e.getName() + "_id", e.getName()));
+				String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%3$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 				System.out.println(
 						String.format(def, sourceAssociation.getName(), e.getName() + "_id", e.getName(), direction));
 			}
 			for (Attribute att : e.getAttributes()) {
-				String dec2 = "(declare-fun val-%1$s-%2$s (Int) %3$s)";
+				String dec2 = "(declare-fun val-%1$s-%4$s-%2$s (Int) %3$s)";
 				System.out.println(
-						String.format(dec2, sourceAssociation.getName(), att.getName(), Type.convert(att.getType())));
-				String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
+						String.format(dec2, sourceAssociation.getName(), att.getName(), Type.convert(att.getType()), e.getName()));
+				String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%3$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 				System.out.println(
 						String.format(def2, sourceAssociation.getName(), att.getName(), e.getName(), direction));
 			}
@@ -83,14 +83,14 @@ public class Value {
 		{
 			Association a = DmUtils.getAssociation(DataModelHolder.getDataModel(), end.getTargetClass());
 			End left = a.getLeft();
-			String dec = "(declare-fun val-%1$s-%2$s (Int) %3$s)";
-			System.out.println(String.format(dec, sourceAssociation.getName(), left.getName(), "Classifier"));
-			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
+			String dec = "(declare-fun val-%1$s-%4$s-%2$s (Int) %3$s)";
+			System.out.println(String.format(dec, sourceAssociation.getName(), left.getName(), "Classifier", a.getName()));
+			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%3$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 			System.out.println(String.format(def, sourceAssociation.getName(), left.getName(), a.getName(), direction));
 			End right = a.getRight();
-			String dec2 = "(declare-fun val-%1$s-%2$s (Int) %3$s)";
-			System.out.println(String.format(dec2, sourceAssociation.getName(), right.getName(), "Classifier"));
-			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
+			String dec2 = "(declare-fun val-%1$s-%4$s-%2$s (Int) %3$s)";
+			System.out.println(String.format(dec2, sourceAssociation.getName(), right.getName(), "Classifier", a.getName()));
+			String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%3$s-%2$s x) (val-%3$s-%2$s (%4$s x))))))";
 			System.out
 					.println(String.format(def2, sourceAssociation.getName(), right.getName(), a.getName(), direction));
 		}

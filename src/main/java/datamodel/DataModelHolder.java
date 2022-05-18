@@ -32,6 +32,15 @@ public class DataModelHolder {
 	public static Set<AssociationExtended> getAssociations() {
 		return associations;
 	}
+	
+	public static AssociationExtended getAssociationExtended(String name) {
+		for (AssociationExtended assoc : associations) {
+			if(assoc.getName().equals(name)) {
+				return assoc;
+			}
+		}
+		return null;
+	}
 
 	public static List<Context> getContext() {
 		return context;
