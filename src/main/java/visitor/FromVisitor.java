@@ -24,7 +24,7 @@ public class FromVisitor implements FromItemVisitor {
 	public void visit(SubSelect subSelect) {
 		Select newSelect = new Select();
 		newSelect.setSelectBody(subSelect.getSelectBody());
-		SelectVisitor sv = new SelectVisitor();
+		SelectVisitor sv = new SelectVisitor(false);
 		sv.setAlias(alias);
 		newSelect.accept(sv);
 	}

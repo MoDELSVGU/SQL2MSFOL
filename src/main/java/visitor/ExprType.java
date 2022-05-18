@@ -5,7 +5,6 @@ import org.vgu.dm2schema.dm.DmUtils;
 
 import configurations.Context;
 import datamodel.DataModelHolder;
-import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -86,10 +85,10 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMatchOperator;
 import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
-import sql2msfol.select.NamingConvention;
 import sql2msfol.select.Type;
-import sql2msfol.select.Value;
 
 public class ExprType implements ExpressionVisitor {
 
@@ -307,7 +306,7 @@ public class ExprType implements ExpressionVisitor {
 		}
 		if (DataModelHolder.matchContext(tableColumn)) {
 			Context ctx = DataModelHolder.get(tableColumn);
-			this.type = "Classifier";
+			this.type = Type.convert(ctx.getType());
 			return;
 		}
 		{
@@ -355,8 +354,9 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(SubSelect subSelect) {
-		// TODO Auto-generated method stub
-
+		PlainSelect ps = (PlainSelect) subSelect.getSelectBody();
+		SelectExpressionItem sei = (SelectExpressionItem) ps.getSelectItems().get(0);
+		sei.getExpression().accept(this);
 	}
 
 	@Override

@@ -1,7 +1,6 @@
 package visitor;
 
 import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.DmUtils;
 import org.vgu.dm2schema.dm.Entity;
 
 import configurations.Context;
@@ -136,7 +135,11 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, signedExpression, Type.get(signedExpression), alias);
 		Expression expr = signedExpression.getExpression();
 		if (expr instanceof LongValue) {
-			expr.accept(this);
+			ExprVisitor ev = new ExprVisitor();
+			ev.setIndex(index);
+			ev.setSourceAssociation(sourceAssociation);
+			ev.setSourceEntity(sourceEntity);
+			expr.accept(ev);
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) (* (-1) (val-%1$s-%3$s x)))))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(signedExpression),
 					NamingConvention.getValName(expr)));
@@ -241,8 +244,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, andExpression, Type.get(andExpression), alias);
 		Expression left = andExpression.getLeftExpression();
 		Expression right = andExpression.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(andExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
@@ -259,8 +270,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, orExpression, Type.get(orExpression), alias);
 		Expression left = orExpression.getLeftExpression();
 		Expression right = orExpression.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (or (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(orExpression),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
@@ -289,8 +308,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, equalsTo, Type.get(equalsTo), alias);
 		Expression left = equalsTo.getLeftExpression();
 		Expression right = equalsTo.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
 		System.out.println(
 				String.format(def, index, NamingConvention.getValName(equalsTo), NamingConvention.getValName(left),
@@ -310,8 +337,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, greaterThan, Type.get(greaterThan), alias);
 		Expression left = greaterThan.getLeftExpression();
 		Expression right = greaterThan.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (> (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
 		System.out.println(
 				String.format(def, index, NamingConvention.getValName(greaterThan), NamingConvention.getValName(left),
@@ -331,8 +366,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, greaterThanEquals, Type.get(greaterThanEquals), alias);
 		Expression left = greaterThanEquals.getLeftExpression();
 		Expression right = greaterThanEquals.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (>= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(greaterThanEquals),
 				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
@@ -363,7 +406,11 @@ public class ExprVisitor implements ExpressionVisitor {
 	public void visit(IsNullExpression isNullExpression) {
 		Value.declareFunction(index, isNullExpression, Type.get(isNullExpression), alias);
 		Expression source = isNullExpression.getLeftExpression();
-		source.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		source.accept(ev);
 		if (isNullExpression.isNot()) {
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) FALSE) (= (val-%1$s-%3$s x) %4$s)))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(isNullExpression),
@@ -401,8 +448,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, minorThan, Type.get(minorThan), alias);
 		Expression left = minorThan.getLeftExpression();
 		Expression right = minorThan.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (< (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
 		System.out.println(
 				String.format(def, index, NamingConvention.getValName(minorThan), NamingConvention.getValName(left),
@@ -422,8 +477,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, minorThanEquals, Type.get(minorThanEquals), alias);
 		Expression left = minorThanEquals.getLeftExpression();
 		Expression right = minorThanEquals.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (<= (val-%1$s-%3$s x) (val-%1$s-%5$s x)))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(minorThanEquals),
 				NamingConvention.getValName(left), Type.nullOf(left), NamingConvention.getValName(right),
@@ -443,8 +506,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, notEqualsTo, Type.get(notEqualsTo), alias);
 		Expression left = notEqualsTo.getLeftExpression();
 		Expression right = notEqualsTo.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (not (= (val-%1$s-%3$s x) %4$s)) (not (= (val-%1$s-%5$s x) %6$s)) (not (= (val-%1$s-%3$s x) (val-%1$s-%5$s x))))))))";
 		System.out.println(
 				String.format(def, index, NamingConvention.getValName(notEqualsTo), NamingConvention.getValName(left),
@@ -462,14 +533,20 @@ public class ExprVisitor implements ExpressionVisitor {
 	@Override
 	public void visit(Column tableColumn) {
 		String columnName = tableColumn.getColumnName();
+		Alias alias = null;
+		if (this.alias != null) {
+			alias = this.alias;
+		} else {
+			alias = new Alias(columnName);
+		}
 		if ("TRUE".equalsIgnoreCase(columnName)) {
-			Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
+			Value.declareFunction(index, tableColumn, Type.get(tableColumn), alias);
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) TRUE))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
 			return;
 		}
 		if ("FALSE".equalsIgnoreCase(columnName)) {
-			Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
+			Value.declareFunction(index, tableColumn, Type.get(tableColumn), alias);
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) FALSE))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn)));
 			return;
@@ -477,12 +554,12 @@ public class ExprVisitor implements ExpressionVisitor {
 		if (DataModelHolder.matchContext(tableColumn)) {
 			Context ctx = DataModelHolder.get(tableColumn);
 			String type;
-			if (ctx.getType() == "String" || ctx.getType() == "Int") {
+			if ("String".equals(ctx.getType()) || "Int".equals(ctx.getType())) {
 				type = ctx.getType();
 			} else {
 				type = "Classifier";
 			}
-			Value.declareFunction(index, tableColumn, type, new Alias(columnName));
+			Value.declareFunction(index, tableColumn, type, alias);
 			String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) %3$s))))";
 			System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableColumn));
 			return;
@@ -492,7 +569,7 @@ public class ExprVisitor implements ExpressionVisitor {
 			String tableName = tableColumn.getTable().getName();
 			String sourceName = (sourceEntity != null) ? sourceEntity.getName() : sourceAssociation.getName();
 			if (!index.equals(sourceName)) {
-				Value.declareFunction(index, tableColumn, Type.get(tableColumn), new Alias(columnName));
+				Value.declareFunction(index, tableColumn, Type.get(tableColumn), alias);
 				if (columnName.equals(tableName + "_id")) {
 					String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-id x)))))";
 					System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn), tableName));
@@ -500,17 +577,26 @@ public class ExprVisitor implements ExpressionVisitor {
 				}
 				{
 					String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) (val-%3$s-%4$s x)))))";
-					System.out.println(
-							String.format(def, index, NamingConvention.getValName(tableColumn), tableName, columnName));
+					if (DataModelHolder.getAssociationExtended(tableName) != null) {
+						if (DataModelHolder.getAssociation(tableName) == null) {
+							String endName = DataModelHolder.getEndName(tableName, columnName);
+							System.out.println(
+									String.format(def, index, NamingConvention.getValName(tableColumn), tableName, endName+"-"+columnName));
+						}
+					} else {
+						System.out.println(
+								String.format(def, index, NamingConvention.getValName(tableColumn), tableName, columnName));
+					}
 					return;
 				}
 			} else {
 				if (DataModelHolder.getAssociationExtended(tableName) != null) {
-					if (DmUtils.getAssociation(DataModelHolder.getDataModel(), tableName) == null) {
-						NamingConvention.saveVal(columnName, tableColumn);
+					if (DataModelHolder.getAssociation(tableName) == null) {
+						String endName = DataModelHolder.getEndName(tableName, columnName);
+						NamingConvention.saveVal(endName+"-"+columnName, tableColumn);
 					}
 				} else {
-					NamingConvention.saveVal(tableName+"-"+columnName, tableColumn);
+					NamingConvention.saveVal(columnName, tableColumn);
 				}
 			}
 		}
@@ -526,8 +612,18 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(SubSelect subSelect) {
-		// TODO Auto-generated method stub
-
+		SelectVisitor sv = new SelectVisitor(false);
+		Select sel = new Select();
+		sel.setSelectBody(subSelect.getSelectBody());
+		sel.accept(sv);
+		Value.declareFunction(index, subSelect, Type.get(subSelect), subSelect.getAlias());
+		String dec = "(declare-const %1$s %2$s)";
+		System.out.println(String.format(dec, NamingConvention.getValName(subSelect), Type.get(subSelect)));
+		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (val-%1$s-%2$s x) %2$s))))";
+		System.out.println(String.format(def, index, NamingConvention.getValName(subSelect)));
+		// TODO: Adding lemma for this
+		String def2 = "(assert (exists ((x Int)) (and (index-%1$s x) (= (val-%1$s-%2$s x) %2$s))))";
+		System.out.println(String.format(def2, index, NamingConvention.getValName(subSelect)));
 	}
 
 	@Override
@@ -536,13 +632,25 @@ public class ExprVisitor implements ExpressionVisitor {
 		Expression when = caseExpression.getWhenClauses().get(0).getWhenExpression();
 		Expression then = caseExpression.getWhenClauses().get(0).getThenExpression();
 		Expression elze = caseExpression.getElseExpression();
-		when.accept(this);
-		then.accept(this);
-		elze.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		when.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		then.accept(ev2);
+		ExprVisitor ev3 = new ExprVisitor();
+		ev3.setIndex(index);
+		ev3.setSourceAssociation(sourceAssociation);
+		ev3.setSourceEntity(sourceEntity);
+		elze.accept(ev3);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (= (val-%1$s-%3$s x) (val-%1$s-%4$s x))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(when),
 				NamingConvention.getValName(caseExpression), NamingConvention.getValName(then)));
-		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (or (= (= (val-%1$s-%2$s x) FALSE) (= (= (val-%1$s-%2$s x) NULL)) (= (val-%1$s-%3$s x) (val-%1$s-%4$s x))))))";
+		String def2 = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (or (= (val-%1$s-%2$s x) FALSE) (= (val-%1$s-%2$s x) NULL)) (= (val-%1$s-%3$s x) (val-%1$s-%4$s x))))))";
 		System.out.println(String.format(def2, index, NamingConvention.getValName(when),
 				NamingConvention.getValName(caseExpression), NamingConvention.getValName(elze)));
 	}
@@ -558,7 +666,7 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, existsExpression, Type.get(existsExpression), alias);
 		Expression source = existsExpression.getRightExpression();
 		SubSelect ss = (SubSelect) source;
-		SelectVisitor sv = new SelectVisitor();
+		SelectVisitor sv = new SelectVisitor(false);
 		Select sel = new Select();
 		sel.setSelectBody(ss.getSelectBody());
 		sel.accept(sv);
@@ -605,8 +713,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, bitwiseAnd, Type.get(bitwiseAnd), alias);
 		Expression left = bitwiseAnd.getLeftExpression();
 		Expression right = bitwiseAnd.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (and (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(bitwiseAnd),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
@@ -623,8 +739,16 @@ public class ExprVisitor implements ExpressionVisitor {
 		Value.declareFunction(index, bitwiseOr, Type.get(bitwiseOr), alias);
 		Expression left = bitwiseOr.getLeftExpression();
 		Expression right = bitwiseOr.getRightExpression();
-		left.accept(this);
-		right.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		left.accept(ev);
+		ExprVisitor ev2 = new ExprVisitor();
+		ev2.setIndex(index);
+		ev2.setSourceAssociation(sourceAssociation);
+		ev2.setSourceEntity(sourceEntity);
+		right.accept(ev2);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (or (= (val-%1$s-%3$s x) TRUE) (= (val-%1$s-%4$s x) TRUE))))))";
 		System.out.println(String.format(def, index, NamingConvention.getValName(bitwiseOr),
 				NamingConvention.getValName(left), NamingConvention.getValName(right)));
@@ -766,7 +890,11 @@ public class ExprVisitor implements ExpressionVisitor {
 	public void visit(NotExpression aThis) {
 		Value.declareFunction(index, aThis, Type.get(aThis), alias);
 		Expression expr = aThis.getExpression();
-		expr.accept(this);
+		ExprVisitor ev = new ExprVisitor();
+		ev.setIndex(index);
+		ev.setSourceAssociation(sourceAssociation);
+		ev.setSourceEntity(sourceEntity);
+		expr.accept(ev);
 		String def = "(assert (forall ((x Int)) (=> (index-%1$s x) (= (= (val-%1$s-%2$s x) TRUE) (= (val-%1$s-%3$s x) FALSE)))))";
 		System.out.println(
 				String.format(def, index, NamingConvention.getValName(aThis), NamingConvention.getValName(expr)));

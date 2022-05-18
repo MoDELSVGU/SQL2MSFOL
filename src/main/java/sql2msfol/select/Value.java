@@ -1,5 +1,7 @@
 package sql2msfol.select;
 
+import java.util.Set;
+
 import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.Attribute;
 import org.vgu.dm2schema.dm.DmUtils;
@@ -22,8 +24,26 @@ public class Value {
 		} else {
 			valName = NamingConvention.generateValName();
 		}
-		NamingConvention.saveVal(index, valName, expr);
-		System.out.println(String.format(dec, index, valName, type));
+		if (DmUtils.isClass(DataModelHolder.getDataModel(), index)) {
+			Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), index);
+			Set<Attribute> atts = e.getAttributes();
+			boolean isDuplicated = false;
+			for (Attribute att : atts) {
+				if (att.getName().equals(valName)) {
+					isDuplicated = true;
+					break;
+				}
+			}
+			if (isDuplicated) {
+				NamingConvention.saveVal(valName, expr);
+			} else {
+				NamingConvention.saveVal(index, valName, expr);
+				System.out.println(String.format(dec, index, valName, type));
+			}
+		} else {
+			NamingConvention.saveVal(index, valName, expr);
+			System.out.println(String.format(dec, index, valName, type));
+		}
 	}
 
 	public static void defineFunction(Expression expr, Alias alias, String index) {

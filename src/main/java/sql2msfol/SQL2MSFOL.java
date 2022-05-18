@@ -36,7 +36,7 @@ public class SQL2MSFOL {
 	
 	public void map(String sql) throws JSQLParserException {
 		Statement statementSql = CCJSqlParserUtil.parse(sql);
-		SelectVisitor visitor = new SelectVisitor();
+		SelectVisitor visitor = new SelectVisitor(true);
 		visitor.setAlias(new Alias("main"));
 		statementSql.accept(visitor);
 //		visitor.formalize();

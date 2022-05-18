@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DataModel;
+import org.vgu.dm2schema.dm.DmUtils;
 
 import configurations.Context;
 import net.sf.jsqlparser.schema.Column;
@@ -34,9 +35,22 @@ public class DataModelHolder {
 	}
 	
 	public static AssociationExtended getAssociationExtended(String name) {
-		for (AssociationExtended assoc : associations) {
+		for (Association assoc : DataModelHolder.getDataModel().getAssociations()) {
 			if(assoc.getName().equals(name)) {
-				return assoc;
+				if (assoc instanceof AssociationExtended) {
+					return (AssociationExtended) assoc;
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static Association getAssociation(String name) {
+		for (Association assoc : DataModelHolder.getDataModel().getAssociations()) {
+			if(assoc.getName().equals(name)) {
+				if (!(assoc instanceof AssociationExtended)) {
+					return (AssociationExtended) assoc;
+				}
 			}
 		}
 		return null;
@@ -63,6 +77,37 @@ public class DataModelHolder {
 		for(Context ctx : context) {
 			if (ctx.getVar().equals(tableColumn.getColumnName())) {
 				return ctx;
+			}
+		}
+		return null;
+	}
+
+	public static String getEndName(String tableName, String columnName) {
+		AssociationExtended assoc = getAssociationExtended(tableName);
+		if (DmUtils.isClass(getDataModel(), assoc.getLeftEntityName())) {
+			if (columnName.equals(assoc.getLeftEntityName()+"_id") ||
+					DmUtils.isPropertyOfClass(getDataModel(), assoc.getLeftEntityName(), columnName)) {
+				return assoc.getLeftEntityName();
+			}
+		}  
+		if (DmUtils.getAssociation(getDataModel(), assoc.getLeftEntityName()) != null) {
+			Association association = DmUtils.getAssociation(getDataModel(), assoc.getLeftEntityName());
+			if (association.getLeftEnd().equals(columnName)
+					|| association.getRightEnd().equals(columnName)) {
+				return assoc.getLeftEntityName();
+			}
+		}
+		if (DmUtils.isClass(getDataModel(), assoc.getRightEntityName())) {
+			if (columnName.equals(assoc.getRightEntityName()+"_id") ||
+					DmUtils.isPropertyOfClass(getDataModel(), assoc.getRightEntityName(), columnName)) {
+				return assoc.getRightEntityName();
+			}
+		}  
+		if (DmUtils.getAssociation(getDataModel(), assoc.getRightEntityName()) != null) {
+			Association association = DmUtils.getAssociation(getDataModel(), assoc.getRightEntityName());
+			if (association.getLeftEnd().equals(columnName)
+					|| association.getRightEnd().equals(columnName)) {
+				return assoc.getRightEntityName();
 			}
 		}
 		return null;

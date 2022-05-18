@@ -49,6 +49,7 @@ import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.show.ShowTablesStatement;
 import net.sf.jsqlparser.statement.truncate.Truncate;
 import net.sf.jsqlparser.statement.update.Update;
@@ -62,7 +63,14 @@ import sql2msfol.utils.StatementUtils;
 
 public class SelectVisitor implements StatementVisitor {
 
+	private Boolean init;
 	private Alias alias;
+	
+	private SelectVisitor () {}
+	
+	public SelectVisitor (boolean init) {
+		this.init = init;
+	}
 
 	@Override
 	public void visit(SavepointStatement savepointStatement) {
@@ -211,19 +219,25 @@ public class SelectVisitor implements StatementVisitor {
 				Index.declareFunction(select, alias, SelectPattern.ONLY_SELECT);
 				Index.defineFunction(select, SelectPattern.ONLY_SELECT);
 				String index = NamingConvention.getSelName(ps);
-				ps.getSelectItems().forEach(si -> {
+				boolean isRes = false;
+				for (SelectItem si : ps.getSelectItems()) {
 					SelectExpressionItem sei = (SelectExpressionItem) si;
 					Expression expr = sei.getExpression();
-					Alias alias = sei.getAlias();
-					Value.defineFunction(expr, alias, index);
-				});
+					Alias siAlias;
+					if (!isRes && init) {
+						siAlias = new Alias("res");
+						isRes = true;
+					} else {
+						siAlias = sei.getAlias();
+					}
+					Value.defineFunction(expr, siAlias, index);
+				}
 				return;
 			}
 
 			if (StatementUtils.noJoinClause(select)) {
 				visitFromItem(select);
 				FromItem fi = ps.getFromItem();
-				this.alias = fi.getAlias();
 				if (StatementUtils.noWhereClause(select)) {
 					/* SELECT FROM */
 					Index.declareFunction(select, alias, SelectPattern.SELECT_FROM);
@@ -231,22 +245,36 @@ public class SelectVisitor implements StatementVisitor {
 					Entity sourceEntity = getEntity(fi);
 					String index = NamingConvention.getSelName(ps);
 					if (sourceEntity != null) {
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceEntity, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceEntity, expr, siAlias, index);
+						}
 						return;
 					}
 					Association sourceAssociation = getAssociation(fi);
 					{
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceAssociation, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceAssociation, expr, siAlias, index);
+						}
 						return;
 					}
 				}
@@ -265,22 +293,36 @@ public class SelectVisitor implements StatementVisitor {
 					Index.defineFunction(select, SelectPattern.SELECT_FROM_WHERE);
 					String index = NamingConvention.getSelName(ps);
 					if (sourceEntity != null) {
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceEntity, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceEntity, expr, siAlias, index);
+						}
 						return;
 					}
 					Association sourceAssociation = getAssociation(fi);
 					{
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceAssociation, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceAssociation, expr, siAlias, index);
+						}
 						return;
 					}
 				}
@@ -297,12 +339,19 @@ public class SelectVisitor implements StatementVisitor {
 						String index = NamingConvention.getSelName(ps);
 						Association sourceAssociation = getAssociation(NamingConvention.getSelJoinName(index));
 						Value.defineFunction(sourceAssociation);
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceAssociation, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceAssociation, expr, siAlias, index);
+						}
 						return;
 					}
 
@@ -315,12 +364,19 @@ public class SelectVisitor implements StatementVisitor {
 						Expression on = ps.getJoins().get(0).getOnExpression();
 						Value.defineFunction(sourceAssociation, on, null, sourceAssociation.getName());
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_ON);
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceAssociation, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceAssociation, expr, siAlias, index);
+						}
 						return;
 					}
 				}
@@ -334,12 +390,19 @@ public class SelectVisitor implements StatementVisitor {
 						Expression where = ps.getWhere();
 						Value.defineFunction(sourceAssociation, where, null, sourceAssociation.getName());
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_WHERE);
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceAssociation, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceAssociation, expr, siAlias, index);
+						}
 						return;
 					}
 
@@ -353,12 +416,19 @@ public class SelectVisitor implements StatementVisitor {
 						Expression where = ps.getWhere();
 						Value.defineFunction(sourceAssociation, where, null, sourceAssociation.getName());
 						Index.defineFunction(select, SelectPattern.SELECT_FROM_JOIN_ON_WHERE);
-						ps.getSelectItems().forEach(si -> {
+						boolean isRes = false;
+						for (SelectItem si : ps.getSelectItems()) {
 							SelectExpressionItem sei = (SelectExpressionItem) si;
 							Expression expr = sei.getExpression();
-							Alias alias = sei.getAlias();
-							Value.defineFunction(sourceAssociation, expr, alias, index);
-						});
+							Alias siAlias;
+							if (!isRes && init) {
+								siAlias = new Alias("res");
+								isRes = true;
+							} else {
+								siAlias = sei.getAlias();
+							}
+							Value.defineFunction(sourceAssociation, expr, siAlias, index);
+						}
 						return;
 					}
 				}

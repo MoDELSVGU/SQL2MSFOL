@@ -15,8 +15,8 @@ public class DM2MSFOL {
 
 	private static void formalize(Association a) {
 		String associationName = a.getName();
-		String leftEnd = a.getRightEnd();
-		String rightEnd = a.getLeftEnd();
+		String leftEnd = a.getLeftEnd();
+		String rightEnd = a.getRightEnd();
 		String assoc_dec = "(declare-fun index-%s (Int) Bool)";
 		System.out.println(String.format(assoc_dec, associationName));
 		String assoc_dec2 = "(declare-fun val-%1$s-%2$s (Int) Classifier)";
