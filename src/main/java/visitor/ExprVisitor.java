@@ -590,9 +590,9 @@ public class ExprVisitor implements ExpressionVisitor {
 					return;
 				}
 			} else {
-				if (DataModelHolder.getAssociationExtended(tableName) != null) {
-					if (DataModelHolder.getAssociation(tableName) == null) {
-						String endName = DataModelHolder.getEndName(tableName, columnName);
+				if (DataModelHolder.getAssociationExtended(sourceName) != null) {
+					if (DataModelHolder.getAssociation(sourceName) == null) {
+						String endName = DataModelHolder.getEndName(sourceName, columnName);
 						NamingConvention.saveVal(endName+"-"+columnName, tableColumn);
 					}
 				} else {
@@ -603,10 +603,16 @@ public class ExprVisitor implements ExpressionVisitor {
 	}
 
 	private void referTableToColumn(Column tableColumn) {
-		if (sourceEntity != null) {
-			tableColumn.setTable(new Table(sourceEntity.getName()));
+		if (tableColumn.getTable() == null) {
+			if (sourceEntity != null) {
+				tableColumn.setTable(new Table(sourceEntity.getName()));
+			} else {
+				tableColumn.setTable(new Table(sourceAssociation.getName()));
+			}
 		} else {
-			tableColumn.setTable(new Table(sourceAssociation.getName()));
+			String tableName = tableColumn.getTable().getName();
+			tableName = NamingConvention.getTableName(tableName);
+			tableColumn.setTable(new Table(tableName));
 		}
 	}
 

@@ -71,7 +71,7 @@ public class Index {
 		case SELECT_FROM_JOIN_ON: {
 			String definition = "(assert (forall ((x Int)) (= (index-%1$s x) (and (index-%1$s-join x) (= (val-%1$s-join-%2$s x) TRUE)))))";
 			System.out.println(String.format(definition, NamingConvention.getSelName(ps), NamingConvention.getValName(ps.getJoins().get(0).getOnExpression())));
-			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
+			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s-join y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
 			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));
@@ -82,7 +82,7 @@ public class Index {
 		case SELECT_FROM_JOIN_WHERE: {
 			String definition = "(assert (forall ((x Int)) (= (index-%1$s x) (and (index-%1$s-join x) (= (val-%1$s-join-%2$s x) TRUE)))))";
 			System.out.println(String.format(definition, NamingConvention.getSelName(ps), NamingConvention.getValName(ps.getWhere())));
-			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
+			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s-join y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
 			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));
@@ -93,7 +93,7 @@ public class Index {
 		case SELECT_FROM_JOIN_ON_WHERE: {
 			String definition = "(assert (forall ((x Int)) (= (index-%1$s x) (and (index-%1$s-join x) (= (val-%1$s-join-%2$s x) TRUE) (= (val-%1$s-join-%3$s x) TRUE)))))";
 			System.out.println(String.format(definition, NamingConvention.generateSelName(), NamingConvention.getValName(ps.getJoins().get(0).getOnExpression()), NamingConvention.getValName(ps.getWhere())));
-			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
+			String definition2 = "(assert (forall ((x Int) (y Int)) (=> (and (index-%1$s-join x) (index-%1$s-join y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))";
 			System.out.println(String.format(definition2, NamingConvention.getSelName(ps)));
 			String definition3 = "(assert (forall ((x Int)) (=> (index-%1$s-join x) (exists ((y Int) (z Int)) (and (index-%2$s y) (index-%3$s z) (= y (left x)) (= z (right x)))))))";
 			System.out.println(String.format(definition3, NamingConvention.getSelName(ps), NamingConvention.getSelName(ps.getFromItem()), NamingConvention.getSelName(ps.getJoins().get(0).getRightItem())));

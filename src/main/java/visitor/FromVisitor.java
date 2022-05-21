@@ -10,6 +10,7 @@ import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import net.sf.jsqlparser.statement.select.TableFunction;
 import net.sf.jsqlparser.statement.select.ValuesList;
+import sql2msfol.select.NamingConvention;
 
 public class FromVisitor implements FromItemVisitor {
 	
@@ -18,6 +19,7 @@ public class FromVisitor implements FromItemVisitor {
 	@Override
 	public void visit(Table tableName) {
 //		NamingConvention.saveSelIndex(tableName.getName(), tableName);
+		NamingConvention.linkAliasToTable(alias.getName(), tableName.getName());
 	}
 
 	@Override
@@ -27,6 +29,7 @@ public class FromVisitor implements FromItemVisitor {
 		SelectVisitor sv = new SelectVisitor(false);
 		sv.setAlias(alias);
 		newSelect.accept(sv);
+		NamingConvention.linkAliasToTable(alias.getName(), alias.getName());
 	}
 
 	@Override

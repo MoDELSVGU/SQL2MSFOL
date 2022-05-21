@@ -27,9 +27,14 @@ public class NamingConvention {
 	private static HashMap<SelectBody, String> selIndices = new HashMap<SelectBody, String>();
 	private static HashMap<String, String> selJoinIndices = new HashMap<String, String>();
 	private static HashMap<Expression, String> valIndices = new HashMap<Expression, String>();
+	private static HashMap<String, String> tableAliases = new HashMap<String, String>();
 
 	public static void increaseSelCounter() {
 		selCounter++;
+	}
+	
+	public static void linkAliasToTable(String alias, String tableName) {
+		tableAliases.put(alias, tableName);
 	}
 
 	public static void increaseValCounter() {
@@ -166,6 +171,13 @@ public class NamingConvention {
 		valIndices.clear();
 		selIndices.clear();
 		selJoinIndices.clear();
+	}
+
+	public static String getTableName(String tableName) {
+		if (tableAliases.containsKey(tableName)) {
+			return tableAliases.get(tableName);
+		}
+		return tableName;
 	}
 
 }
