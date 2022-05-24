@@ -5,9 +5,8 @@ import java.io.IOException;
 
 import org.json.simple.parser.ParseException;
 
-import datamodel.DataModelHolder;
+import datamodel.DataModelUtils;
 import sql2msfol.SQL2MSFOL;
-import sql2msfol.select.NamingConvention;
 
 /**************************************************************************
  * Copyright 2020 Vietnamese-German-University
@@ -33,10 +32,8 @@ public class Runner {
 
 		SQL2MSFOL sql2msfol = new SQL2MSFOL();
 		sql2msfol.setUpDataModelFromURL(c.getDataModel());
-		sql2msfol.formalizeDataModel();
-		NamingConvention.reset();
-		DataModelHolder.setDataModel(sql2msfol.getDataModel());
-		DataModelHolder.setContext(c.getContext());
+		DataModelUtils.setDataModel(sql2msfol.getDataModel());
+		DataModelUtils.setContext(c.getContext());
 		sql2msfol.map(c.getSql());
 
 	}

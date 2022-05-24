@@ -1,18 +1,20 @@
-package sql2msfol.select;
+package type;
 
+import index.Index;
 import net.sf.jsqlparser.expression.Expression;
-import visitor.ExprType;
+import visitor.ExpressionTypeVisitor;
 
-public class Type {
+public class TypeUtils {
 	
-	public static String get(Expression expr) {
-		ExprType et = new ExprType();
-		expr.accept(et);
-		return et.getType();
+	public static Type get(Expression expr, Index source) {
+		ExpressionTypeVisitor etv = new ExpressionTypeVisitor();
+		etv.setSource(source);
+		expr.accept(etv);
+		return new Type(etv.getType());
 	}
 
 	public static String nullOf(Expression expr) {
-		String type = get(expr);
+		String type = get(expr).getName();
 		if ("String".equals(type)) {
 			return "nullString";
 		}

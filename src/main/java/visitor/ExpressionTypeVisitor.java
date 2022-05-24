@@ -4,7 +4,14 @@ import org.vgu.dm2schema.dm.Association;
 import org.vgu.dm2schema.dm.DmUtils;
 
 import configurations.Context;
-import datamodel.DataModelHolder;
+import datamodel.DataModelUtils;
+import index.AssociationIndex;
+import index.EntityIndex;
+import index.Index;
+import index.JoinIndex;
+import index.PlainSelectIndex;
+import mappings.IndexMapping;
+import mappings.ValueMapping;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -85,14 +92,17 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMatchOperator;
 import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
-import sql2msfol.select.Type;
+import type.TypeUtils;
+import value.Value;
 
-public class ExprType implements ExpressionVisitor {
+public class ExpressionTypeVisitor implements ExpressionVisitor {
 
 	private String type;
+	private Index source;
 
 	@Override
 	public void visit(BitwiseRightShift aThis) {
@@ -114,8 +124,8 @@ public class ExprType implements ExpressionVisitor {
 
 	@Override
 	public void visit(Function function) {
-		// TODO Auto-generated method stub
-
+		Expression expr = function.getParameters().getExpressions().get(0);
+		expr.accept(this);
 	}
 
 	@Override
@@ -304,51 +314,59 @@ public class ExprType implements ExpressionVisitor {
 			this.type = "BOOL";
 			return;
 		}
-		if (DataModelHolder.matchContext(tableColumn)) {
-			Context ctx = DataModelHolder.get(tableColumn);
-			this.type = Type.convert(ctx.getType());
+		if (DataModelUtils.matchContext(tableColumn)) {
+			Context ctx = DataModelUtils.get(tableColumn);
+			this.type = TypeUtils.convert(ctx.getType());
 			return;
 		}
 		{
-			String tableName = tableColumn.getTable().getName();
-			if (DmUtils.isClass(DataModelHolder.getDataModel(), tableName)) {
-				if (columnName.equals(tableName + "_id")) {
-					this.type = "Classifier";
-					return;
-				}
-				{
-					this.type = Type
-							.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), tableName, columnName));
-					return;
+			if (source instanceof EntityIndex) {
+				EntityIndex ei = (EntityIndex) source;
+				String type = DataModelUtils.getType(columnName, ei.getSource());
+				this.type =  TypeUtils.convert(type);
+			} else if (source instanceof AssociationIndex) {
+				this.type =  "Classifier";
+			} else if (source instanceof PlainSelectIndex) {
+//				PlainSelectIndex psi = (PlainSelectIndex) source;
+//				PlainSelect ps = psi.getSource();
+//				FromItem fi = ps.getFromItem();
+//				Index ifi = IndexMapping.find(fi);
+//				this.type = findTypeFromSourceIndex(columnName, ifi);
+				// Must be another subselect
+				PlainSelectIndex psi_ = (PlainSelectIndex) source;
+				Value referenceValue = ValueMapping.getValue(psi_, columnName);
+				String type = referenceValue.getType().getName();
+				this.type =  TypeUtils.convert(type);
+			} else {
+				// Must be a JoinIndex
+				JoinIndex ji = (JoinIndex) source;
+				Index left = ji.getLeft();
+				Index right = ji.getRight();
+				if (findTypeFromSourceIndex(columnName, left) == null) {
+					this.type = findTypeFromSourceIndex(columnName, right);
+				} else {
+					this.type = findTypeFromSourceIndex(columnName, left);
 				}
 			}
-			{
-				Association a = DmUtils.getAssociation(DataModelHolder.getDataModel(), tableName);
-				String leftEntity = a.getRightEntityName();
-				if (DmUtils.isClass(DataModelHolder.getDataModel(), leftEntity)) {
-					if (DmUtils.isPropertyOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
-						this.type = Type
-								.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), leftEntity, columnName));
-					}
-					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), leftEntity, columnName)) {
-						this.type = "Classifier";
-						return;
-					}
-				}
+		}
+	}
 
-				String rightEntity = a.getLeftEntityName();
-				if (DmUtils.isClass(DataModelHolder.getDataModel(), rightEntity)) {
-					if (DmUtils.isPropertyOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {
-						this.type = Type
-								.convert(DmUtils.getAttributeType(DataModelHolder.getDataModel(), rightEntity, columnName));
-						return;
-					}
-					if (DmUtils.isAssociationEndOfClass(DataModelHolder.getDataModel(), rightEntity, columnName)) {
-						this.type = "Classifier";
-						return;
-					}
-				}
+	private String findTypeFromSourceIndex(String columnName, Index ifi) {
+		if (ifi instanceof EntityIndex) {
+			EntityIndex ei = (EntityIndex) ifi;
+			String type = DataModelUtils.getType(columnName, ei.getSource());
+			return TypeUtils.convert(type);
+		} else if (ifi instanceof AssociationIndex) {
+			return "Classifier";
+		} else {
+			// Must be another subselect
+			PlainSelectIndex psi_ = (PlainSelectIndex) ifi;
+			Value referenceValue = ValueMapping.getValue(psi_, columnName);
+			if (referenceValue == null) {
+				return null;
 			}
+			String type = referenceValue.getType().getName();
+			return TypeUtils.convert(type);
 		}
 	}
 
@@ -356,7 +374,9 @@ public class ExprType implements ExpressionVisitor {
 	public void visit(SubSelect subSelect) {
 		PlainSelect ps = (PlainSelect) subSelect.getSelectBody();
 		SelectExpressionItem sei = (SelectExpressionItem) ps.getSelectItems().get(0);
-		sei.getExpression().accept(this);
+		ExpressionTypeVisitor etv = new ExpressionTypeVisitor();
+		etv.setSource(IndexMapping.getPlainSelectIndex(ps));
+		sei.getExpression().accept(etv);
 	}
 
 	@Override
@@ -616,5 +636,13 @@ public class ExprType implements ExpressionVisitor {
 
 	public String getType() {
 		return type;
+	}
+
+	public Index getSource() {
+		return source;
+	}
+
+	public void setSource(Index source) {
+		this.source = source;
 	}
 }
