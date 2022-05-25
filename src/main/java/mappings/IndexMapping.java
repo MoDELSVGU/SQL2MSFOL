@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.DataModel;
-import org.vgu.dm2schema.dm.Entity;
+import org.uni.dm2schema.dm.Association;
+import org.uni.dm2schema.dm.DataModel;
+import org.uni.dm2schema.dm.Entity;
 
 import datamodel.DataModelUtils;
 import index.AssociationIndex;
@@ -122,7 +122,6 @@ public class IndexMapping {
 
 	public static void declare() {
 		IndexMapping.indices.forEach(i -> {
-			i.comment();
 			i.declare();
 		});
 	}

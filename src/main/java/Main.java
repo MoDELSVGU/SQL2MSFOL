@@ -18,7 +18,7 @@ public class Main {
 				/* A boolean literal */
 				"SELECT TRUE", "SELECT FALSE", "SELECT NULL"
 				/* A integer literal */
-//				, "SELECT 0", "SELECT -1", "SELECT 1"
+				, "SELECT 0", "SELECT -1", "SELECT 1"
 //				/* A string literal */
 //				, "SELECT 'a string'"
 //				/* logical operations */
@@ -65,7 +65,7 @@ public class Main {
 				DataModelUtils.setDataModel(sql2msfol.getDataModel());
 				DataModelUtils
 						.setContext(Arrays.asList(new Context("user", "String"), new Context("self", "Student"), new Context("caller", "Lecturer")));
-				System.out.println("--- %s ---".formatted(expr));
+				System.out.println(String.format("--- %s ---", expr));
 				sql2msfol.map(expr);
 			} catch (JSQLParserException e) {
 				e.printStackTrace();

@@ -3,7 +3,8 @@ package index;
 import java.util.Arrays;
 import java.util.List;
 
-import org.vgu.dm2schema.dm.Association;
+import org.uni.dm2schema.dm.Association;
+
 
 public class AssociationIndex extends Index {
 	private Association source;

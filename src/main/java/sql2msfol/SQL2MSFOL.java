@@ -8,7 +8,7 @@ import java.io.IOException;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.vgu.dm2schema.dm.DataModel;
+import org.uni.dm2schema.dm.DataModel;
 
 import mappings.IndexMapping;
 import mappings.ValueMapping;

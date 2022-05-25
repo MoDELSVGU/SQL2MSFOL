@@ -11,7 +11,7 @@ public abstract class Value {
 	private Type type;
 
 	final String declaration = "(declare-fun %1$s (Int) %2$s)";
-	final String comment = "; %1$s = %2$s";
+	final String comment = "%1$s = %2$s";
 
 	public String getName() {
 		return name;
@@ -25,12 +25,13 @@ public abstract class Value {
 		this.name = name;
 	}
 
-	public void comment() {
-		System.out.println(String.format(comment, getFuncName(), toString()));
+	public String comment() {
+		return String.format(comment, getFuncName(), toString());
 	}
 
 	public void declare() {
-		System.out.println(String.format(declaration, getFuncName(), type.getName()));
+		String dec = String.format(declaration, getFuncName(), type.getName());
+		System.out.println(String.format("%s ; %s", dec, comment()));
 	}
 
 	public Index getParentIndex() {

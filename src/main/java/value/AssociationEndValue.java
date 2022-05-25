@@ -1,6 +1,6 @@
 package value;
 
-import org.vgu.dm2schema.dm.End;
+import org.uni.dm2schema.dm.End;
 
 public class AssociationEndValue extends Value {
 	private Boolean isLeft;
@@ -26,5 +26,10 @@ public class AssociationEndValue extends Value {
 
 	public void setIsLeft(Boolean isLeft) {
 		this.isLeft = isLeft;
+	}
+	
+	@Override
+	public String toString() {
+		return source.getName();
 	}
 }

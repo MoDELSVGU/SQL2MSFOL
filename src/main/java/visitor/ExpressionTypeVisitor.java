@@ -1,8 +1,5 @@
 package visitor;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.DmUtils;
-
 import configurations.Context;
 import datamodel.DataModelUtils;
 import index.AssociationIndex;
@@ -92,7 +89,6 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMatchOperator;
 import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
@@ -323,9 +319,9 @@ public class ExpressionTypeVisitor implements ExpressionVisitor {
 			if (source instanceof EntityIndex) {
 				EntityIndex ei = (EntityIndex) source;
 				String type = DataModelUtils.getType(columnName, ei.getSource());
-				this.type =  TypeUtils.convert(type);
+				this.type = TypeUtils.convert(type);
 			} else if (source instanceof AssociationIndex) {
-				this.type =  "Classifier";
+				this.type = "Classifier";
 			} else if (source instanceof PlainSelectIndex) {
 //				PlainSelectIndex psi = (PlainSelectIndex) source;
 //				PlainSelect ps = psi.getSource();
@@ -336,7 +332,7 @@ public class ExpressionTypeVisitor implements ExpressionVisitor {
 				PlainSelectIndex psi_ = (PlainSelectIndex) source;
 				Value referenceValue = ValueMapping.getValue(psi_, columnName);
 				String type = referenceValue.getType().getName();
-				this.type =  TypeUtils.convert(type);
+				this.type = TypeUtils.convert(type);
 			} else {
 				// Must be a JoinIndex
 				JoinIndex ji = (JoinIndex) source;

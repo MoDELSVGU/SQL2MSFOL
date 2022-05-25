@@ -1,5 +1,8 @@
 package visitor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import index.Index;
 import mappings.ValueMapping;
 import net.sf.jsqlparser.expression.AnalyticExpression;
@@ -92,6 +95,7 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	private Index source;
 	private Index parent;
+	private List<String> meanings = new ArrayList<String>();
 
 	@Override
 	public void visit(BitwiseRightShift aThis) {
@@ -107,7 +111,9 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NullValue nullValue) {
-		valueExpression(nullValue);
+		//TODO: Type check of null?
+		meanings.add("NULL");
+		valueExpression(nullValue, meanings);
 	}
 
 	@Override
@@ -119,12 +125,13 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 		expr.accept(this);
 	}
 
-	private void valueExpression(Expression expr) {
+	private void valueExpression(Expression expr, List<String> meanings) {
 		ExpressionValue ev = new ExpressionValue();
 		ev.setExpr(expr);
 		ev.setParentIndex(parent);
 		ev.setSourceIndex(source);
 		ev.setType(TypeUtils.get(expr, source));
+		ev.setMeanings(meanings);
 		ValueMapping.add(ev);
 	}
 
@@ -155,7 +162,8 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(LongValue longValue) {
-		valueExpression(longValue);
+		meanings.add(String.valueOf(longValue.getValue()));
+		valueExpression(longValue, meanings);
 	}
 
 	@Override
@@ -340,7 +348,11 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(Column tableColumn) {
-		valueExpression(tableColumn);
+		String columnName = tableColumn.getColumnName();
+		if ("TRUE".equals(tableColumn.getColumnName()) || "FALSE".equals(tableColumn.getColumnName())) {
+			meanings.add(columnName);
+		}
+		valueExpression(tableColumn, meanings);
 	}
 
 	@Override

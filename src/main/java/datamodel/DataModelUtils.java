@@ -2,11 +2,11 @@ package datamodel;
 
 import java.util.List;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.Attribute;
-import org.vgu.dm2schema.dm.DataModel;
-import org.vgu.dm2schema.dm.DmUtils;
-import org.vgu.dm2schema.dm.Entity;
+import org.uni.dm2schema.dm.Association;
+import org.uni.dm2schema.dm.Attribute;
+import org.uni.dm2schema.dm.DataModel;
+import org.uni.dm2schema.dm.DmUtils;
+import org.uni.dm2schema.dm.Entity;
 
 import configurations.Context;
 import net.sf.jsqlparser.schema.Column;

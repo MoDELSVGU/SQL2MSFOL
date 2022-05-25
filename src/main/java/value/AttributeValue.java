@@ -1,7 +1,8 @@
 package value;
 
-import org.vgu.dm2schema.dm.Attribute;
-import org.vgu.dm2schema.dm.Entity;
+
+import org.uni.dm2schema.dm.Attribute;
+import org.uni.dm2schema.dm.Entity;
 
 import datamodel.DataModelUtils;
 
@@ -22,4 +23,10 @@ public class AttributeValue extends Value {
 		Entity e = DataModelUtils.getEntity(source);
 		System.out.println(String.format(def, getSourceIndex().getFuncName(), getFuncName(), source.getName()+"_"+e.getName()));
 	}
+	
+	@Override
+	public String toString() {
+		return source.getName();
+	}
+	
 }
