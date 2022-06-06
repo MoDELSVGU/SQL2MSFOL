@@ -6,6 +6,7 @@ import org.uni.dm2schema.dm.Association;
 import org.uni.dm2schema.dm.Attribute;
 import org.uni.dm2schema.dm.DataModel;
 import org.uni.dm2schema.dm.DmUtils;
+import org.uni.dm2schema.dm.End;
 import org.uni.dm2schema.dm.Entity;
 
 import configurations.Context;
@@ -78,5 +79,29 @@ public class DataModelUtils {
 		}
 		return null;
 	}
+
+	public static Attribute getAttribute(Entity e, String columnName) {
+		return DmUtils.getAttribute(e, columnName);
+	}
+
+	public static End getAssociationEnd(Association as, String columnName) {
+		End left = as.getLeft();
+		if (left.getName().equals(columnName)) {
+			return left;
+		} else {
+ 			return as.getRight();
+		}
+	}
+
+	public static boolean isContextVariables(String columnName) {
+		for (Context c : context) {
+			if (c.getVar().equals(columnName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
 
 }

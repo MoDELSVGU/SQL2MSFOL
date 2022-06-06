@@ -48,6 +48,20 @@ public class ValueMapping {
 			av.setType(new Type(TypeUtils.convert(att.getType())));
 			ValueMapping.add(av, att.getName());
 		}
+		valueEntityId(e);
+	}
+
+	private static void valueEntityId(Entity e) {
+		AttributeValue av = new AttributeValue();
+		Attribute att = new Attribute();
+		att.setName(String.format("%1$s_id", e.getName()));
+		att.setType("Classifier");
+		av.setSource(att);
+		av.setSourceIndex(IndexMapping.getEntityIndex(e));
+		av.setParentIndex(IndexMapping.getEntityIndex(e));
+		av.setType(new Type(TypeUtils.convert(att.getType())));
+		ValueMapping.add(av, att.getName());
+		e.getAttributes().add(att);
 	}
 
 	private static void valueAssociation(Association a) {
@@ -57,14 +71,14 @@ public class ValueMapping {
 		aev_left.setSourceIndex(IndexMapping.getAssociationIndex(a));
 		aev_left.setParentIndex(IndexMapping.getAssociationIndex(a));
 		aev_left.setSource(left);
-		aev_left.setIsLeft(true);
+		aev_left.setIsLeft(false);
 		aev_left.setType(new Type("Classifier"));
 		ValueMapping.add(aev_left, left.getName());
 		AssociationEndValue aev_right = new AssociationEndValue();
 		aev_right.setSourceIndex(IndexMapping.getAssociationIndex(a));
 		aev_right.setParentIndex(IndexMapping.getAssociationIndex(a));
 		aev_right.setSource(right);
-		aev_right.setIsLeft(false);
+		aev_right.setIsLeft(true);
 		aev_right.setType(new Type("Classifier"));
 		ValueMapping.add(aev_right, right.getName());
 	}
@@ -118,11 +132,35 @@ public class ValueMapping {
 		}
 		return null;
 	}
+	
+	public static Value getValue(Attribute at) {
+		for (Value v : values) {
+			if (v instanceof AttributeValue) {
+				AttributeValue av = (AttributeValue) v;
+				if (av.getSource().equals(at)) {
+					return v;
+				}
+			}
+		}
+		return null;
+	}
 
 	public static void define() {
 		ValueMapping.values.forEach(v -> {
 			v.define();
 		});
+	}
+
+	public static Value getValue(End end) {
+		for (Value v : values) {
+			if (v instanceof AssociationEndValue) {
+				AssociationEndValue aev = (AssociationEndValue) v;
+				if (aev.getSource().getName().equals(end.getName())) {
+					return aev;
+				}
+			}
+		}
+		return null;
 	}
 
 }

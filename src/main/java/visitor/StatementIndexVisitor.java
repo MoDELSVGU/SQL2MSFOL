@@ -249,6 +249,12 @@ public class StatementIndexVisitor implements StatementVisitor {
 		JoinIndex ji = new JoinIndex();
 		ji.setLeft(IndexMapping.find(left));
 		ji.setRight(IndexMapping.find(right));
+		if (left.getAlias() != null) {
+			ji.setAliasLeft(left.getAlias().getName());
+		} 
+		if (right.getAlias() != null) {
+			ji.setAliasRight(right.getAlias().getName());
+		}
 		IndexMapping.add(ji);
 	}
 

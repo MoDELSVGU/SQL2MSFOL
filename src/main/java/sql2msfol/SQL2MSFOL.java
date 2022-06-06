@@ -10,6 +10,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.uni.dm2schema.dm.DataModel;
 
+import constant.ConstantMapping;
 import mappings.IndexMapping;
 import mappings.ValueMapping;
 import net.sf.jsqlparser.JSQLParserException;
@@ -35,15 +36,21 @@ public class SQL2MSFOL {
 	public void map(String sql) throws JSQLParserException {
 		Statement statementSql = CCJSqlParserUtil.parse(sql);
 		init();
+		generateConstant();
 		generateIndex(statementSql);
 		generateValue(statementSql);
 		IndexMapping.declare();
 		ValueMapping.declare();
+		ConstantMapping.define();
 		IndexMapping.define();
 		ValueMapping.define();
 //		SQL2MSFOLStatementVisitor visitor = new SQL2MSFOLStatementVisitor();
 //		statementSql.accept(visitor);
 //		visitor.formalize();
+	}
+
+	private void generateConstant() {
+		ConstantMapping.reset();
 	}
 
 	private void generateValue(Statement sql) {

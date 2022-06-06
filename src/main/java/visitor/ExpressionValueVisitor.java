@@ -3,8 +3,22 @@ package visitor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.uni.dm2schema.dm.Association;
+import org.uni.dm2schema.dm.Attribute;
+import org.uni.dm2schema.dm.End;
+import org.uni.dm2schema.dm.Entity;
+
+import constant.Constant;
+import constant.ConstantMapping;
+import datamodel.DataModelUtils;
+import index.AssociationIndex;
+import index.EntityIndex;
 import index.Index;
+import index.JoinIndex;
+import index.PlainSelectIndex;
+import mappings.IndexMapping;
 import mappings.ValueMapping;
+import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -87,6 +101,8 @@ import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectExpressionItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SubSelect;
 import type.TypeUtils;
 import value.ExpressionValue;
@@ -95,7 +111,26 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	private Index source;
 	private Index parent;
-	private List<String> meanings = new ArrayList<String>();
+	private List<String> definitions = new ArrayList<String>();
+	// TODO: Clean this quick dirty implementation
+	// As an expression, a SubSelect implementation sometimes need to be a
+	// singled-value expression otherwise the statement will not be well-typed.
+	// Here, in the implementation, whenever it is the case (that is a Subselect
+	// must return a singled-value, we need to prove that it is indeed).
+	// In our supported syntax, in most of the case the Subselect must be singled
+	// value, the only case where it doesn't matter is the case
+	// EXISTS subselect
+	// to simplify the prototype, the dirty trick is implemented: adding a flag in
+	// this visitor that is true whenever the proof for singled value is not needed.
+	private boolean isSingleValued = true;
+
+	public boolean isSingleValued() {
+		return isSingleValued;
+	}
+
+	public void setSingleValued(boolean isSingleValued) {
+		this.isSingleValued = isSingleValued;
+	}
 
 	@Override
 	public void visit(BitwiseRightShift aThis) {
@@ -111,35 +146,48 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NullValue nullValue) {
-		//TODO: Type check of null?
-		meanings.add("NULL");
-		valueExpression(nullValue, meanings);
+		// TODO: Type check of null?
+		ExpressionValue v = valueExpression(nullValue, true);
+		String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
+		definition = String.format(definition, parent.getFuncName(), v.getFuncName(), "NULL");
+		definitions.add(definition);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(Function function) {
-		// Currently, we accept one parameter in the function (i.e., function as
-		// aggregation)
-		valueExpression(function);
-		Expression expr = function.getParameters().getExpressions().get(0);
-		expr.accept(this);
+		// TODO Auto-generated method stub
+
 	}
 
-	private void valueExpression(Expression expr, List<String> meanings) {
+	private ExpressionValue valueExpression(Expression expr, Boolean forNow) {
 		ExpressionValue ev = new ExpressionValue();
 		ev.setExpr(expr);
 		ev.setParentIndex(parent);
 		ev.setSourceIndex(source);
 		ev.setType(TypeUtils.get(expr, source));
-		ev.setMeanings(meanings);
+		ev.setMeanings(definitions);
 		ValueMapping.add(ev);
+		return ev;
+	}
+
+	private ExpressionValueVisitor createVisitor() {
+		ExpressionValueVisitor evv = new ExpressionValueVisitor();
+		evv.setParent(this.parent);
+		evv.setSource(this.source);
+		return evv;
 	}
 
 	@Override
 	public void visit(SignedExpression signedExpression) {
-		valueExpression(signedExpression);
 		Expression expr = signedExpression.getExpression();
-		expr.accept(this);
+		expr.accept(createVisitor());
+		ExpressionValue v = valueExpression(signedExpression, true);
+		String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (* (-1) (%3$s x))))))";
+		definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(signedExpression.getExpression()).getFuncName());
+		definitions.add(definition);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -162,8 +210,17 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(LongValue longValue) {
-		meanings.add(String.valueOf(longValue.getValue()));
-		valueExpression(longValue, meanings);
+		ExpressionValue v = valueExpression(longValue, true);
+		String axiom = "(assert (not (= %1$s nullInt)))";
+		String axiom1 = "(assert (not (= %1$s invalidInt)))";
+		axiom = String.format(axiom, longValue.getValue());
+		axiom1 = String.format(axiom1, longValue.getValue());
+		String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
+		definition = String.format(definition, parent.getFuncName(), v.getFuncName(), longValue.getValue());
+		definitions.add(definition);
+		definitions.add(axiom);
+		definitions.add(axiom1);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -198,7 +255,17 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(StringValue stringValue) {
-		valueExpression(stringValue);
+		ExpressionValue v = valueExpression(stringValue, true);
+		String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
+		String axiom = "(assert (not (= %1$s nullString)))";
+		String axiom1 = "(assert (not (= %1$s invalString)))";
+		axiom = String.format(axiom, stringValue.toString());
+		axiom1 = String.format(axiom1, stringValue.toString());
+		definition = String.format(definition, parent.getFuncName(), v.getFuncName(), stringValue.toString());
+		definitions.add(definition);
+		definitions.add(axiom);
+		definitions.add(axiom1);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -233,20 +300,46 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(AndExpression andExpression) {
-		valueExpression(andExpression);
 		Expression left = andExpression.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = andExpression.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(andExpression, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (= (%3$s x) TRUE) (= (%4$s x) TRUE))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (or (= (%3$s x) FALSE) (= (%4$s x) FALSE))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (and (= (%3$s x) NULL) (= (%4$s x) TRUE)) (and (= (%3$s x) TRUE) (= (%4$s x) NULL)) (and (= (%3$s x) NULL) (= (%4$s x) NULL)))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(OrExpression orExpression) {
-		valueExpression(orExpression);
 		Expression left = orExpression.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = orExpression.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(orExpression, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (or (= (%3$s x) TRUE) (= (%4$s x) TRUE))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (= (%3$s x) FALSE) (= (%4$s x) FALSE))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (and (= (%3$s x) NULL) (= (%4$s x) FALSE)) (and (= (%3$s x) FALSE) (= (%4$s x) NULL)) (and (= (%3$s x) NULL) (= (%4$s x) NULL)))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -263,29 +356,77 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(EqualsTo equalsTo) {
-		valueExpression(equalsTo);
 		Expression left = equalsTo.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = equalsTo.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(equalsTo, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (= (%3$s x) (%4$s x)))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (not (= (%3$s x) (%4$s x))))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (= (%3$s x) %5$s) (= (%4$s x) %6$s))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(GreaterThan greaterThan) {
-		valueExpression(greaterThan);
 		Expression left = greaterThan.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = greaterThan.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(greaterThan, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (> (%3$s x) (%4$s x)))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (not (> (%3$s x) (%4$s x))))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (= (%3$s x) %5$s) (= (%4$s x) %6$s))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(GreaterThanEquals greaterThanEquals) {
-		valueExpression(greaterThanEquals);
 		Expression left = greaterThanEquals.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = greaterThanEquals.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(greaterThanEquals, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (>= (%3$s x) (%4$s x)))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (not (>= (%3$s x) (%4$s x))))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (= (%3$s x) %5$s) (= (%4$s x) %6$s))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -302,9 +443,25 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(IsNullExpression isNullExpression) {
-		valueExpression(isNullExpression);
 		Expression expr = isNullExpression.getLeftExpression();
-		expr.accept(this);
+		expr.accept(createVisitor());
+		ExpressionValue v = valueExpression(isNullExpression, true);
+		String definition1;
+		String definition2;
+		if (!isNullExpression.isNot()) {
+			definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (= (%3$s x) %4$s)))))";
+			definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (not (= (%3$s x) %4$s))))))";
+		} else {
+			definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (not (= (%3$s x) %4$s))))))";
+			definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (= (%3$s x) %4$s)))))";
+		}
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(expr).getFuncName(), TypeUtils.nullOf(expr, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(expr).getFuncName(), TypeUtils.nullOf(expr, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -321,59 +478,252 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(MinorThan minorThan) {
-		valueExpression(minorThan);
 		Expression left = minorThan.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = minorThan.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(minorThan, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (< (%3$s x) (%4$s x)))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (not (< (%3$s x) (%4$s x))))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (= (%3$s x) %5$s) (= (%4$s x) %6$s))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(MinorThanEquals minorThanEquals) {
-		valueExpression(minorThanEquals);
 		Expression left = minorThanEquals.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = minorThanEquals.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(minorThanEquals, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (<= (%3$s x) (%4$s x)))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (not (<= (%3$s x) (%4$s x))))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (= (%3$s x) %5$s) (= (%4$s x) %6$s))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(NotEqualsTo notEqualsTo) {
-		valueExpression(notEqualsTo);
 		Expression left = notEqualsTo.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = notEqualsTo.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(notEqualsTo, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (not (= (%3$s x) (%4$s x))))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (not (= (%3$s x) %5$s)) (not (= (%4$s x) %6$s)) (= (%3$s x) (%4$s x)))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (= (%3$s x) %5$s) (= (%4$s x) %6$s))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName(),
+				TypeUtils.nullOf(left, source), TypeUtils.nullOf(right, source));
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(Column tableColumn) {
 		String columnName = tableColumn.getColumnName();
+		ExpressionValue v = valueExpression(tableColumn, true);
 		if ("TRUE".equals(tableColumn.getColumnName()) || "FALSE".equals(tableColumn.getColumnName())) {
-			meanings.add(columnName);
+			String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
+			definition = String.format(definition, parent.getFuncName(), v.getFuncName(), columnName);
+			definitions.add(definition);
+		} else if (DataModelUtils.isContextVariables(columnName)) {
+			String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
+			definition = String.format(definition, parent.getFuncName(), v.getFuncName(), columnName);
+			definitions.add(definition);
+		} else {
+			// It must be the projection from Fromitem(s)
+			mapFromItemColumn(tableColumn, columnName, v, source, null);
+		} 
+		v.setMeanings(definitions);
+	}
+
+	private void mapFromItemColumn(Column tableColumn, String columnName, ExpressionValue v, Index source, String nested) {
+		if (source instanceof EntityIndex) {
+			EntityIndex ei = (EntityIndex) source;
+			Entity e = ei.getSource();
+			Attribute at = DataModelUtils.getAttribute(e, columnName);
+			if (nested == null) {
+				String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s x)))))";
+				definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+						ValueMapping.getValue(at).getFuncName());
+				definitions.add(definition);
+			} else {
+				String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s (%4$s x))))))";
+				definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+						ValueMapping.getValue(at).getFuncName(), nested);
+				definitions.add(definition);
+			}
+		} else if (source instanceof AssociationIndex) {
+			AssociationIndex ai = (AssociationIndex) source;
+			Association as = ai.getSource();
+			End end = DataModelUtils.getAssociationEnd(as, columnName);
+			if (nested == null) {
+				String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s x)))))";
+				definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+						ValueMapping.getValue(end).getFuncName());
+				definitions.add(definition);
+			} else {
+				String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s (%4$s x))))))";
+				definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+						ValueMapping.getValue(end).getFuncName(), nested);
+				definitions.add(definition);
+			}
+		} else if (source instanceof PlainSelectIndex){
+			PlainSelectIndex psi = (PlainSelectIndex) source;
+			Expression expr = findReferExpression(psi, columnName);
+			if (nested == null) {
+				String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s x)))))";
+				definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+						ValueMapping.getValue(expr).getFuncName());
+				definitions.add(definition);
+			} else {
+				String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s (%4$s x))))))";
+				definition = String.format(definition, parent.getFuncName(), v.getFuncName(),
+						ValueMapping.getValue(expr).getFuncName(), nested);
+				definitions.add(definition);
+			}
+		} else {
+			// Then it must be the JoinIndex
+			JoinIndex ji = (JoinIndex) source;
+			String alias = tableColumn.getTable().getName();
+			if (ji.getAliasLeft().equals(alias)) {
+				Index left = ji.getLeft();
+				mapFromItemColumn(tableColumn, columnName, v, left, "left");
+			} else {
+				Index right = ji.getRight();
+				mapFromItemColumn(tableColumn, columnName, v, right, "right");
+			}
 		}
-		valueExpression(tableColumn, meanings);
+	}
+
+	private Expression findReferExpression(PlainSelectIndex psi, String columnName) {
+		List<SelectItem> sis = psi.getSource().getSelectItems();
+		for (SelectItem si : sis) {
+			if (si instanceof SelectExpressionItem) {
+				SelectExpressionItem sei = (SelectExpressionItem) si;
+				Expression e = sei.getExpression();
+				Alias as = sei.getAlias();
+				if (as != null && as.getName().equals(columnName)) {
+					return e;
+				} else if (e instanceof Column) {
+					Column c = (Column) e;
+					if (c.getColumnName().equals(columnName)) {
+						return c;
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	@Override
 	public void visit(SubSelect subSelect) {
 		PlainSelect ps = (PlainSelect) subSelect.getSelectBody();
-		Select s = new Select();
-		s.setSelectBody(ps);
+		Select s = prepareSelect(ps);
 		StatementValueVisitor vsv = new StatementValueVisitor();
 		s.accept(vsv);
-		valueExpression(subSelect);
+		ExpressionValue v = valueExpression(subSelect, true);
+		if (isSingleValued) {
+			String comment = "; Here, one needs to prove that [%1$s] subselect returns exactly one row with one value, that is, a single-value";
+			comment = String.format(comment, IndexMapping.getPlainSelectIndex(ps).getFuncName());
+			String comment1 = "; Below provides the lemma that proves the above lemma";
+			String comment2 = "; Please enable the lemma proof by removing the next 3 lines";
+			String proof = "; (assert (not (exists ((x Int)) (and (%1$s x) (forall ((y Int)) (=> (not (= x y)) (not (%1$s y)))))))";
+			String checksat = "; (check-sat)";
+			String exit = "; (exit)";
+			proof = String.format(proof, IndexMapping.getPlainSelectIndex(ps).getFuncName());
+			String comment3 = "; ==== [Lemma ends here] ====";
+			String comment4 = "; Assuming that the above proof holds, we append to the theorem the following \"facts\" about [%1$s] subselect";
+			comment4 = String.format(comment4, IndexMapping.getPlainSelectIndex(ps).getFuncName());
+			// TODO: We assume that the subslect here contains exactly one projection.
+			// This can easily be checked but here we leave the responsibility for the
+			// developer who implements the SQL query.
+			Expression expr = ((SelectExpressionItem) ps.getSelectItems().get(0)).getExpression();
+			Constant c = ConstantMapping.addConstant(subSelect,
+					TypeUtils.get(expr, IndexMapping.getPlainSelectIndex(ps)));
+			String definition = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
+			String definition2 = "(assert (exists ((x Int)) (and (%1$s x) (= (%2$s x) %3$s))))";
+			definition = String.format(definition, parent.getFuncName(), v.getFuncName(), c.getName());
+			definition2 = String.format(definition2, IndexMapping.getPlainSelectIndex(ps).getFuncName(),
+					ValueMapping.getValue(expr).getFuncName(), c.getName());
+			definitions.add(comment);
+			definitions.add(comment1);
+			definitions.add(comment2);
+			definitions.add(proof);
+			definitions.add(checksat);
+			definitions.add(exit);
+			definitions.add(comment3);
+			definitions.add(comment4);
+			definitions.add(definition);
+			definitions.add(definition2);
+		} else {
+			String comment = "; In this case, the val of the subselect is irrelevant to the decidability of the theory";
+			String comment2 = "; ergo, it is omitted here for the sake of simplicity";
+			definitions.add(comment);
+			definitions.add(comment2);
+		}
+		v.setMeanings(definitions);
+	}
+
+	private Select prepareSelect(PlainSelect ps) {
+		Select s = new Select();
+		s.setSelectBody(ps);
+		return s;
 	}
 
 	@Override
 	public void visit(CaseExpression caseExpression) {
-		valueExpression(caseExpression);
 		Expression when = caseExpression.getWhenClauses().get(0).getWhenExpression();
-		when.accept(this);
 		Expression then = caseExpression.getWhenClauses().get(0).getThenExpression();
-		then.accept(this);
 		Expression elze = caseExpression.getElseExpression();
-		elze.accept(this);
+		when.accept(createVisitor());
+		then.accept(createVisitor());
+		elze.accept(createVisitor());
+		ExpressionValue v = valueExpression(caseExpression, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) (%4$s x)) (= (%3$s x) TRUE)))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) (%5$s x)) (or (= (%3$s x) FALSE) (= (%3$s x) NULL))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(when).getFuncName(), ValueMapping.getValue(then).getFuncName(),
+				ValueMapping.getValue(elze).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(when).getFuncName(), ValueMapping.getValue(then).getFuncName(),
+				ValueMapping.getValue(elze).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -384,9 +734,29 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(ExistsExpression existsExpression) {
-		valueExpression(existsExpression);
 		Expression expr = existsExpression.getRightExpression();
-		expr.accept(this);
+		ExpressionValueVisitor evv = createVisitor();
+		evv.isSingleValued = false;
+		expr.accept(evv);
+		// Shortcut: We know for a fact that the subexpression is a subselect!
+		PlainSelect subSelect = (PlainSelect) ((SubSelect) expr).getSelectBody();
+		ExpressionValue v = valueExpression(existsExpression, true);
+		String definition1;
+		String definition2;
+		if (!existsExpression.isNot()) {
+			definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (exists ((y Int)) (%3$s y))))))";
+			definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (not (exists ((y Int)) (%3$s y)))))))";
+		} else {
+			definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (not (exists ((y Int)) (%3$s y)))))))";
+			definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (exists ((y Int)) (%3$s y))))))";
+		}
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				IndexMapping.getPlainSelectIndex(subSelect).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				IndexMapping.getPlainSelectIndex(subSelect).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -409,20 +779,46 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(BitwiseAnd bitwiseAnd) {
-		valueExpression(bitwiseAnd);
 		Expression left = bitwiseAnd.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = bitwiseAnd.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(bitwiseAnd, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (and (= (%3$s x) TRUE) (= (%4$s x) TRUE))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (or (= (%3$s x) FALSE) (= (%4$s x) FALSE))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (and (= (%3$s x) NULL) (= (%4$s x) TRUE)) (and (= (%3$s x) TRUE) (= (%4$s x) NULL)) (and (= (%3$s x) NULL) (= (%4$s x) NULL)))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
 	public void visit(BitwiseOr bitwiseOr) {
-		valueExpression(bitwiseOr);
 		Expression left = bitwiseOr.getLeftExpression();
-		left.accept(this);
+		left.accept(createVisitor());
 		Expression right = bitwiseOr.getRightExpression();
-		right.accept(this);
+		right.accept(createVisitor());
+		ExpressionValue v = valueExpression(bitwiseOr, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (or (= (%3$s x) TRUE) (= (%4$s x) TRUE))))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (and (= (%3$s x) FALSE) (= (%4$s x) FALSE))))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (or (and (= (%3$s x) NULL) (= (%4$s x) FALSE)) (and (= (%3$s x) FALSE) (= (%4$s x) NULL)) (and (= (%3$s x) NULL) (= (%4$s x) NULL)))))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(left).getFuncName(), ValueMapping.getValue(right).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override
@@ -553,9 +949,22 @@ public class ExpressionValueVisitor implements ExpressionVisitor {
 
 	@Override
 	public void visit(NotExpression aThis) {
-		valueExpression(aThis);
 		Expression expr = aThis.getExpression();
-		expr.accept(this);
+		expr.accept(createVisitor());
+		ExpressionValue v = valueExpression(aThis, true);
+		String definition1 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) TRUE) (= (%3$s x) FALSE)))))";
+		String definition2 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) FALSE) (= (%3$s x) TRUE)))))";
+		String definition3 = "(assert (forall ((x Int)) (=> (%1$s x) (= (= (%2$s x) NULL) (= (%3$s x) NULL)))))";
+		definition1 = String.format(definition1, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(expr).getFuncName());
+		definition2 = String.format(definition2, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(expr).getFuncName());
+		definition3 = String.format(definition3, parent.getFuncName(), v.getFuncName(),
+				ValueMapping.getValue(expr).getFuncName());
+		definitions.add(definition1);
+		definitions.add(definition2);
+		definitions.add(definition3);
+		v.setMeanings(definitions);
 	}
 
 	@Override

@@ -9,6 +9,7 @@ import net.sf.jsqlparser.expression.Expression;
 public class ExpressionValue extends Value {
 	private Expression expr;
 	private List<String> meanings;
+	private boolean isLeft = false;
 
 	public ExpressionValue() {
 		meanings = new ArrayList<String>();
@@ -37,13 +38,21 @@ public class ExpressionValue extends Value {
 
 	@Override
 	public void define() {
-		if (getSourceIndex() instanceof JoinIndex) {
-
-		} else {
-			for (String s : meanings) {
-				String def = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) %3$s))))";
-				System.out.println(String.format(def, getParentIndex().getFuncName(), getFuncName(), s));
-			}
+		for (String s : meanings) {
+			System.out.println(s);
 		}
+	}
+
+	public boolean isLeft() {
+		return isLeft;
+	}
+
+	public void setLeft(boolean isLeft) {
+		this.isLeft = isLeft;
+	}
+
+	@Override
+	public String getFuncName() {
+		return String.format("val-%1$s-expr%2$s", parentIndex.getFuncName(), getName());
 	}
 }

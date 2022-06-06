@@ -19,14 +19,24 @@ public class AttributeValue extends Value {
 
 	@Override
 	public void define() {
-		String def = "(assert (forall ((x Int)) (%1$s x) (= (%2$s x) (%3$s (id x)))))";
 		Entity e = DataModelUtils.getEntity(source);
-		System.out.println(String.format(def, getSourceIndex().getFuncName(), getFuncName(), source.getName()+"_"+e.getName()));
+		if (source.getName().contains("_id")) {
+			String def = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (id x)))))";
+			System.out.println(String.format(def, getSourceIndex().getFuncName(), getFuncName()));
+		} else {
+			String def = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (%3$s (id x))))))";
+			System.out.println(String.format(def, getSourceIndex().getFuncName(), getFuncName(), source.getName()+"_"+e.getName()));
+		}
 	}
 	
 	@Override
 	public String toString() {
 		return source.getName();
+	}
+
+	@Override
+	public String getFuncName() {
+		return String.format("val-%1$s-%2$s", parentIndex.getFuncName(), getName());
 	}
 	
 }

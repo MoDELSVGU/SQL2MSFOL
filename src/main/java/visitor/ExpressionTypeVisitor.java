@@ -373,6 +373,7 @@ public class ExpressionTypeVisitor implements ExpressionVisitor {
 		ExpressionTypeVisitor etv = new ExpressionTypeVisitor();
 		etv.setSource(IndexMapping.getPlainSelectIndex(ps));
 		sei.getExpression().accept(etv);
+		this.type = etv.getType();
 	}
 
 	@Override

@@ -16,7 +16,7 @@ public class AssociationEndValue extends Value {
 
 	@Override
 	public void define() {
-		String def = "(assert (forall ((x Int)) (%1$s x) (= (%2$s x) (id (%3$s x)))))";
+		String def = "(assert (forall ((x Int)) (=> (%1$s x) (= (%2$s x) (id (%3$s x))))))";
 		System.out.println(String.format(def, getSourceIndex().getFuncName(), getFuncName(), isLeft ? "left" : "right"));
 	}
 
@@ -31,5 +31,10 @@ public class AssociationEndValue extends Value {
 	@Override
 	public String toString() {
 		return source.getName();
+	}
+
+	@Override
+	public String getFuncName() {
+		return String.format("val-%1$s-%2$s", parentIndex.getFuncName(), getName());
 	}
 }

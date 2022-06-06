@@ -1,5 +1,6 @@
 package type;
 
+import datamodel.DataModelUtils;
 import index.Index;
 import net.sf.jsqlparser.expression.Expression;
 import visitor.ExpressionTypeVisitor;
@@ -13,8 +14,8 @@ public class TypeUtils {
 		return new Type(etv.getType());
 	}
 
-	public static String nullOf(Expression expr) {
-		String type = get(expr).getName();
+	public static String nullOf(Expression expr, Index source) {
+		String type = get(expr, source).getName();
 		if ("String".equals(type)) {
 			return "nullString";
 		}
@@ -33,6 +34,9 @@ public class TypeUtils {
 		}
 		if ("Boolean".equals(type)) {
 			return "Bool";
+		}
+		if (DataModelUtils.isEntity(type)) {
+			return "Classifier";
 		}
 		else return type;
 	}

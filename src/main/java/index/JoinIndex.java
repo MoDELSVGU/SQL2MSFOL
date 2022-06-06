@@ -8,10 +8,13 @@ import mappings.IndexMapping;
 public class JoinIndex extends Index {
 	private Index left;
 	private Index right;
+	private String aliasLeft;
+	private String aliasRight;
+	
 	final List<String> defs = Arrays.asList(
 			"(assert (forall ((x Int) (y Int)) (=> (and (%1$s x) (%1$s y) (not (= x y))) (not (and (= (left x) (left y)) (= (right x) (right y)))))))",
-			"(assert (forall ((x Int) (y Int)) (=> (%2$s x) (%3$s y) (exists ((z Int)) (and (%1$s z) (= x (id (left z))) (= y (id (right z))))))))",
-			"(assert (forall ((z Int)) (=> (%1$s z) (exists ((x Int) (y Int)) (and (%2$s x) (%3$s y) (= x (id (left z))) (= y (id (right z))))))))"
+			"(assert (forall ((x Int) (y Int)) (=> (%2$s x) (%3$s y) (exists ((z Int)) (and (%1$s z) (= x (left z)) (= y (right z)))))))",
+			"(assert (forall ((z Int)) (=> (%1$s z) (exists ((x Int) (y Int)) (and (%2$s x) (%3$s y) (= x (left z)) (= y (right z)))))))"
 	);
 
 	public Index getLeft() {
@@ -41,5 +44,21 @@ public class JoinIndex extends Index {
 		for (String def :defs) {
 			System.out.println(String.format(def, join.getFuncName(), left.getFuncName(), right.getFuncName()));
 		}
+	}
+
+	public String getAliasLeft() {
+		return aliasLeft;
+	}
+
+	public void setAliasLeft(String aliasLeft) {
+		this.aliasLeft = aliasLeft;
+	}
+
+	public String getAliasRight() {
+		return aliasRight;
+	}
+
+	public void setAliasRight(String aliasRight) {
+		this.aliasRight = aliasRight;
 	}
 }

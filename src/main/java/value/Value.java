@@ -6,7 +6,7 @@ import type.Type;
 public abstract class Value {
 
 	private String name;
-	private Index parentIndex; // parent is where the expression stands
+	protected Index parentIndex; // parent is where the expression stands
 	private Index sourceIndex; // source is where the expresison value can be found
 	private Type type;
 
@@ -17,9 +17,7 @@ public abstract class Value {
 		return name;
 	}
 	
-	public String getFuncName() {
-		return String.format("val-%1$s-expr%2$s", parentIndex.getFuncName(), getName());
-	}
+	public abstract String getFuncName();
 
 	public void setName(String name) {
 		this.name = name;

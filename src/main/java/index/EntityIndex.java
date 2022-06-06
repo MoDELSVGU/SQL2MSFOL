@@ -11,7 +11,7 @@ public class EntityIndex extends Index {
 			"(assert (forall ((x Int)) (=> (%1$s x) (exists ((c Classifier)) (and (%2$s c) (= c (id x)))))))",
 			"(assert (forall ((c Classifier)) (=> (%2$s c) (exists ((x Int)) (and (%1$s x) (= c (id x)))))))",
 			"(assert (forall ((x Int) (y Int)) (=> (and (%1$s x) (%1$s y) (not (= x y))) (not (= (id x) (id y))))))",
-			"(assert (forall ((x Int)) (=> (%1$s x) (= (val-%2$s-%2$s_id x) (id x)))))"
+			"(assert (forall ((x Int)) (=> (%1$s x) (= (val-%1$s-%2$s_id x) (id x)))))"
 	);
 
 	public Entity getSource() {
