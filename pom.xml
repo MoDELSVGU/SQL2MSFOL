@@ -116,7 +116,7 @@
 	</profiles>
 
 	<build>
-		<sourceDirectory>src</sourceDirectory>
+		<sourceDirectory>src/main/java</sourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -148,7 +148,7 @@
 						<manifest>
 							<addClasspath>true</addClasspath>
 							<classpathPrefix>lib/</classpathPrefix>
-							<mainClass>Runner</mainClass>
+							<mainClass>modeling.sql.fol.configurations.Runner</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
