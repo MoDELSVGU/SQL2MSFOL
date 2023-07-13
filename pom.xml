@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.modelsvgu</groupId>
 	<artifactId>SQL2MSFOL</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>SQL2MSFOL is an implementation of mapping from SQL statements to Many-Sorted First-Order Logic (MSFOL).</description>
 	<url>https://github.com/MoDELSVGU/SQL2MSFOL</url>
