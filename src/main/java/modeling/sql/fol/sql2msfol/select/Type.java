@@ -1,7 +1,7 @@
-package sql2msfol.select;
+package modeling.sql.fol.sql2msfol.select;
 
+import modeling.sql.fol.visitor.ExprType;
 import net.sf.jsqlparser.expression.Expression;
-import visitor.ExprType;
 
 public class Type {
 	

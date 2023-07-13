@@ -1,4 +1,4 @@
-package sql2msfol.select;
+package modeling.sql.fol.sql2msfol.select;
 
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.statement.select.PlainSelect;

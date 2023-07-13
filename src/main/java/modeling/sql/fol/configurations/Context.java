@@ -1,4 +1,4 @@
-package configurations;
+package modeling.sql.fol.configurations;
 
 public class Context {
 	private String var;

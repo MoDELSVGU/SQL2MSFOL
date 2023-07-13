@@ -1,19 +1,18 @@
-package sql2msfol.select;
+package modeling.sql.fol.sql2msfol.select;
 
 import java.util.HashMap;
 import java.util.Set;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.DataModel;
-import org.vgu.dm2schema.dm.DmUtils;
-import org.vgu.dm2schema.dm.End;
-import org.vgu.dm2schema.dm.Entity;
-import org.vgu.dm2schema.dm.Multiplicity;
-
-import datamodel.AssociationExtended;
-import datamodel.AttributeExtended;
-import datamodel.DataModelHolder;
-import datamodel.EntityExtended;
+import modeling.data.entities.Association;
+import modeling.data.entities.DataModel;
+import modeling.data.entities.End;
+import modeling.data.entities.Entity;
+import modeling.data.entities.Multiplicity;
+import modeling.data.utils.DmUtils;
+import modeling.sql.fol.datamodel.AssociationExtended;
+import modeling.sql.fol.datamodel.AttributeExtended;
+import modeling.sql.fol.datamodel.DataModelHolder;
+import modeling.sql.fol.datamodel.EntityExtended;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -39,20 +38,20 @@ public class NamingConvention {
 	public static String generateSelName() {
 		return String.format("sel%s", String.valueOf(selCounter++));
 	}
-	
+
 	public static String generateValName() {
 		return String.format("val%s", String.valueOf(valCounter++));
 	}
-	
+
 	public static void saveSelIndex(String name, SubSelect subSelect) {
 		selIndices.put(subSelect.getSelectBody(), name);
 	}
-	
+
 	public static void saveVal(String index, String name, Expression expr) {
 		valIndices.put(expr, name);
 		addNewAttribute(index, name, expr);
 	}
-	
+
 	public static void saveVal(String name, Expression expr) {
 		valIndices.put(expr, name);
 	}
@@ -62,12 +61,12 @@ public class NamingConvention {
 		att.setName(name);
 		att.setType(Type.get(expr));
 		if (DmUtils.isClass(DataModelHolder.getDataModel(), index)) {
-			Entity e = DmUtils.getEntity(DataModelHolder.getDataModel(), index);
+			Entity e = modeling.sql.fol.sql2msfol.utils.DmUtils.getEntity(DataModelHolder.getDataModel(), index);
 			e.getAttributes().add(att);
 			return;
-		} 
+		}
 		{
-			Association a = DmUtils.getAssociation(DataModelHolder.getDataModel(), index);
+			Association a = modeling.sql.fol.sql2msfol.utils.DmUtils.getAssociation(DataModelHolder.getDataModel(), index);
 			if (a instanceof AssociationExtended) {
 				((AssociationExtended) a).getAttributes().add(att);
 			} else {
@@ -87,7 +86,7 @@ public class NamingConvention {
 		selIndices.put(selectBody, name);
 		addNewEntity(name);
 	}
-	
+
 	public static void saveSelIndexAssociation(String name, SelectBody selectBody) throws Exception {
 		selJoinIndices.put(getSelName(selectBody), name);
 		End left = getLeft(selectBody, name);
@@ -125,7 +124,7 @@ public class NamingConvention {
 
 	private static void addNewAssociation(End left, End right) {
 		DataModel dm = DataModelHolder.getDataModel();
-		AssociationExtended a = new AssociationExtended(left, right);
+		AssociationExtended a = new AssociationExtended(left.getAssociation(), left, right);
 		dm.getAssociations().add(a);
 	}
 
@@ -147,11 +146,11 @@ public class NamingConvention {
 		}
 		throw new Exception("There is no suitable fromItem name in the storage.");
 	}
-	
+
 	public static String getSelName(SelectBody selectBody) {
 		return selIndices.get(selectBody);
 	}
-	
+
 	public static String getSelJoinName(String index) {
 		return selJoinIndices.get(index);
 	}

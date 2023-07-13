@@ -1,4 +1,4 @@
-package visitor;
+package modeling.sql.fol.visitor;
 
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.schema.Table;

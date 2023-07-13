@@ -1,11 +1,14 @@
-package visitor;
+package modeling.sql.fol.visitor;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.Entity;
-
-import configurations.Context;
-import datamodel.DataModelHolder;
+import modeling.data.entities.Association;
+import modeling.data.entities.Entity;
+import modeling.sql.fol.configurations.Context;
+import modeling.sql.fol.datamodel.DataModelHolder;
+import modeling.sql.fol.sql2msfol.select.NamingConvention;
+import modeling.sql.fol.sql2msfol.select.Type;
+import modeling.sql.fol.sql2msfol.select.Value;
 import net.sf.jsqlparser.expression.Alias;
+import net.sf.jsqlparser.expression.AllValue;
 import net.sf.jsqlparser.expression.AnalyticExpression;
 import net.sf.jsqlparser.expression.AnyComparisonExpression;
 import net.sf.jsqlparser.expression.ArrayConstructor;
@@ -38,15 +41,18 @@ import net.sf.jsqlparser.expression.NumericBind;
 import net.sf.jsqlparser.expression.OracleHierarchicalExpression;
 import net.sf.jsqlparser.expression.OracleHint;
 import net.sf.jsqlparser.expression.OracleNamedFunctionParameter;
+import net.sf.jsqlparser.expression.OverlapsCondition;
 import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.RowConstructor;
 import net.sf.jsqlparser.expression.RowGetExpression;
+import net.sf.jsqlparser.expression.SafeCastExpression;
 import net.sf.jsqlparser.expression.SignedExpression;
 import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.TimeKeyExpression;
 import net.sf.jsqlparser.expression.TimeValue;
 import net.sf.jsqlparser.expression.TimestampValue;
 import net.sf.jsqlparser.expression.TimezoneExpression;
+import net.sf.jsqlparser.expression.TryCastExpression;
 import net.sf.jsqlparser.expression.UserVariable;
 import net.sf.jsqlparser.expression.ValueListExpression;
 import net.sf.jsqlparser.expression.VariableAssignment;
@@ -71,10 +77,12 @@ import net.sf.jsqlparser.expression.operators.relational.Between;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ExistsExpression;
 import net.sf.jsqlparser.expression.operators.relational.FullTextSearch;
+import net.sf.jsqlparser.expression.operators.relational.GeometryDistance;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.InExpression;
 import net.sf.jsqlparser.expression.operators.relational.IsBooleanExpression;
+import net.sf.jsqlparser.expression.operators.relational.IsDistinctExpression;
 import net.sf.jsqlparser.expression.operators.relational.IsNullExpression;
 import net.sf.jsqlparser.expression.operators.relational.JsonOperator;
 import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
@@ -87,11 +95,10 @@ import net.sf.jsqlparser.expression.operators.relational.RegExpMySQLOperator;
 import net.sf.jsqlparser.expression.operators.relational.SimilarToExpression;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.AllTableColumns;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SubSelect;
-import sql2msfol.select.NamingConvention;
-import sql2msfol.select.Type;
-import sql2msfol.select.Value;
 
 public class ExprVisitor implements ExpressionVisitor {
 
@@ -580,12 +587,12 @@ public class ExprVisitor implements ExpressionVisitor {
 					if (DataModelHolder.getAssociationExtended(tableName) != null) {
 						if (DataModelHolder.getAssociation(tableName) == null) {
 							String endName = DataModelHolder.getEndName(tableName, columnName);
-							System.out.println(
-									String.format(def, index, NamingConvention.getValName(tableColumn), tableName, endName+"-"+columnName));
+							System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn),
+									tableName, endName + "-" + columnName));
 						}
 					} else {
-						System.out.println(
-								String.format(def, index, NamingConvention.getValName(tableColumn), tableName, columnName));
+						System.out.println(String.format(def, index, NamingConvention.getValName(tableColumn),
+								tableName, columnName));
 					}
 					return;
 				}
@@ -593,7 +600,7 @@ public class ExprVisitor implements ExpressionVisitor {
 				if (DataModelHolder.getAssociationExtended(tableName) != null) {
 					if (DataModelHolder.getAssociation(tableName) == null) {
 						String endName = DataModelHolder.getEndName(tableName, columnName);
-						NamingConvention.saveVal(endName+"-"+columnName, tableColumn);
+						NamingConvention.saveVal(endName + "-" + columnName, tableColumn);
 					}
 				} else {
 					NamingConvention.saveVal(columnName, tableColumn);
@@ -988,6 +995,54 @@ public class ExprVisitor implements ExpressionVisitor {
 
 	public void setSourceAssociation(Association association) {
 		this.sourceAssociation = association;
+	}
+
+	@Override
+	public void visit(OverlapsCondition overlapsCondition) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(TryCastExpression cast) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(SafeCastExpression cast) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(AllColumns allColumns) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(AllTableColumns allTableColumns) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(AllValue allValue) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(IsDistinctExpression isDistinctExpression) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit(GeometryDistance geometryDistance) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

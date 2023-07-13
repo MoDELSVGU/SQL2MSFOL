@@ -1,6 +1,6 @@
-package datamodel;
+package modeling.sql.fol.datamodel;
 
-import org.vgu.dm2schema.dm.Attribute;
+import modeling.data.entities.Attribute;
 
 public class AttributeExtended extends Attribute {
 	private String val;

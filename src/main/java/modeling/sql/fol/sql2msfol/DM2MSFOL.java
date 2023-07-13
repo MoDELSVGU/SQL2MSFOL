@@ -1,9 +1,9 @@
-package sql2msfol;
+package modeling.sql.fol.sql2msfol;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.Attribute;
-import org.vgu.dm2schema.dm.DataModel;
-import org.vgu.dm2schema.dm.Entity;
+import modeling.data.entities.Association;
+import modeling.data.entities.Attribute;
+import modeling.data.entities.DataModel;
+import modeling.data.entities.Entity;
 
 public class DM2MSFOL {
 
@@ -15,8 +15,8 @@ public class DM2MSFOL {
 
 	private static void formalize(Association a) {
 		String associationName = a.getName();
-		String leftEnd = a.getLeftEnd();
-		String rightEnd = a.getRightEnd();
+		String leftEnd = a.getLeftEndName();
+		String rightEnd = a.getRightEndName();
 		String assoc_dec = "(declare-fun index-%s (Int) Bool)";
 		System.out.println(String.format(assoc_dec, associationName));
 		String assoc_dec2 = "(declare-fun val-%1$s-%2$s (Int) Classifier)";

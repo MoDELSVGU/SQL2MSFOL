@@ -1,4 +1,4 @@
-package configurations;
+package modeling.sql.fol.configurations;
 
 import java.util.ArrayList;
 import java.util.Arrays;

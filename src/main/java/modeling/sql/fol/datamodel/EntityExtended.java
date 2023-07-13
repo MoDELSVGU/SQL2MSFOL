@@ -1,6 +1,6 @@
-package datamodel;
+package modeling.sql.fol.datamodel;
 
-import org.vgu.dm2schema.dm.Entity;
+import modeling.data.entities.Entity;
 
 public class EntityExtended extends Entity {
 	private Boolean isIntermediate;

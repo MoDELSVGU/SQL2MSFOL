@@ -1,4 +1,4 @@
-package sql2msfol.select;
+package modeling.sql.fol.sql2msfol.select;
 
 public enum SelectPattern {
 	ONLY_SELECT,

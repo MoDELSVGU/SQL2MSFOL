@@ -1,35 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.vgu.se</groupId>
+	<groupId>io.github.modelsvgu</groupId>
 	<artifactId>SQL2MSFOL</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>SQL2MSFOL is an implementation of mapping from SQL statements to Many-Sorted First-Order Logic (MSFOL).</description>
+	<url>https://github.com/MoDELSVGU/SQL2MSFOL</url>
+
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Hoang Nguyen</name>
+			<email>ngpbhoang1406@gmail.com</email>
+			<organization>ETH Zurich</organization>
+			<organizationUrl>https://inf.ethz.ch/</organizationUrl>
+		</developer>
+	</developers>
 
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/org.sosy-lab/java-smt 
-		<dependency>
-			<groupId>org.sosy-lab</groupId>
-			<artifactId>java-smt</artifactId>
-			<version>3.6.0</version>
-		</dependency> 
-		-->
-		<!-- https://mvnrepository.com/artifact/com.github.jsqlparser/jsqlparser -->
-		<dependency>
-			<groupId>com.github.jsqlparser</groupId>
-			<artifactId>jsqlparser</artifactId>
-			<version>4.2</version>
-		</dependency>
 		<dependency>
 			<groupId>com.googlecode.json-simple</groupId>
 			<artifactId>json-simple</artifactId>
 			<version>1.1</version>
 		</dependency>
 		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>datamodel</artifactId>
-			<version>${project.version}</version>
+			<groupId>io.github.modelsvgu</groupId>
+			<artifactId>datamodelj</artifactId>
+			<version>1.0.8-ASC</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.modelsvgu</groupId>
+			<artifactId>sqlj</artifactId>
+			<version>1.0.2-ASC</version>
 		</dependency>
 	</dependencies>
+
+	<scm>
+		<connection>scm:git:git://github.com/MoDELSVGU/SQL2MSFOL.git</connection>
+		<developerConnection>scm:git:ssh://github.com:MoDELSVGU/SQL2MSFOL.git</developerConnection>
+		<url>https://github.com/MoDELSVGU/SQL2MSFOL</url>
+	</scm>
 
 	<properties>
 		<maven.compiler.target>1.8</maven.compiler.target>
@@ -38,26 +55,104 @@
 
 	<profiles>
 		<profile>
-			<id>sql2msfol</id>
+			<id>release</id>
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>exec-maven-plugin</artifactId>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.4.1</version>
+						<executions>
+							<execution>
+								<id>attach-javadoc</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.2.1</version>
+						<executions>
+							<execution>
+								<id>attach-source</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.jreleaser</groupId>
+						<artifactId>jreleaser-maven-plugin</artifactId>
+						<version>1.3.1</version>
 						<configuration>
-							<executable>java</executable>
-							<arguments>
-								<argument>-Xmx1G</argument>
-								<argument>-classpath</argument>
-								<!-- automatically creates the classpath using all project dependencies, 
-									also adding the project build directory -->
-								<classpath />
-								<argument>configurations.Runner</argument>
-							</arguments>
+							<jreleaser>
+								<signing>
+									<active>ALWAYS</active>
+									<armored>true</armored>
+								</signing>
+								<deploy>
+									<maven>
+										<nexus2>
+											<maven-central>
+												<active>ALWAYS</active>
+												<url>https://s01.oss.sonatype.org/service/local</url>
+												<closeRepository>false</closeRepository>
+												<releaseRepository>false</releaseRepository>
+												<stagingRepositories>target/staging-deploy</stagingRepositories>
+											</maven-central>
+										</nexus2>
+									</maven>
+								</deploy>
+							</jreleaser>
 						</configuration>
 					</plugin>
 				</plugins>
 			</build>
 		</profile>
 	</profiles>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<!-- Build an executable JAR -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+							<mainClass>Runner</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

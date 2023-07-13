@@ -1,13 +1,13 @@
-package configurations;
+package modeling.sql.fol.configurations;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.json.simple.parser.ParseException;
 
-import datamodel.DataModelHolder;
-import sql2msfol.SQL2MSFOL;
-import sql2msfol.select.NamingConvention;
+import modeling.sql.fol.datamodel.DataModelHolder;
+import modeling.sql.fol.sql2msfol.SQL2MSFOL;
+import modeling.sql.fol.sql2msfol.select.NamingConvention;
 
 /**************************************************************************
  * Copyright 2020 Vietnamese-German-University

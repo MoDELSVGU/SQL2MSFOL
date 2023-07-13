@@ -1,19 +1,19 @@
-package datamodel;
+package modeling.sql.fol.datamodel;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.Attribute;
-import org.vgu.dm2schema.dm.End;
+import modeling.data.entities.Association;
+import modeling.data.entities.Attribute;
+import modeling.data.entities.End;
 
 public class AssociationExtended extends Association {
 
-	public AssociationExtended(End left, End right) {
-		super(left, right);
+	public AssociationExtended(String name, End left, End right) {
+		super(name, left, right);
 		attributes = new HashSet<Attribute>();
 	}
-	
+
 	public Set<Attribute> getAttributes() {
 		return attributes;
 	}

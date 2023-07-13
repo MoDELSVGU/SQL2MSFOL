@@ -1,10 +1,14 @@
-package visitor;
+package modeling.sql.fol.visitor;
 
-import org.vgu.dm2schema.dm.Association;
-import org.vgu.dm2schema.dm.DmUtils;
-import org.vgu.dm2schema.dm.Entity;
-
-import datamodel.DataModelHolder;
+import modeling.data.entities.Association;
+import modeling.data.entities.Entity;
+import modeling.data.utils.DmUtils;
+import modeling.sql.fol.datamodel.DataModelHolder;
+import modeling.sql.fol.sql2msfol.select.Index;
+import modeling.sql.fol.sql2msfol.select.NamingConvention;
+import modeling.sql.fol.sql2msfol.select.SelectPattern;
+import modeling.sql.fol.sql2msfol.select.Value;
+import modeling.sql.fol.sql2msfol.utils.StatementUtils;
 import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Table;
@@ -24,12 +28,14 @@ import net.sf.jsqlparser.statement.ShowColumnsStatement;
 import net.sf.jsqlparser.statement.ShowStatement;
 import net.sf.jsqlparser.statement.StatementVisitor;
 import net.sf.jsqlparser.statement.Statements;
+import net.sf.jsqlparser.statement.UnsupportedStatement;
 import net.sf.jsqlparser.statement.UseStatement;
 import net.sf.jsqlparser.statement.alter.Alter;
 import net.sf.jsqlparser.statement.alter.AlterSession;
 import net.sf.jsqlparser.statement.alter.AlterSystemStatement;
 import net.sf.jsqlparser.statement.alter.RenameTableStatement;
 import net.sf.jsqlparser.statement.alter.sequence.AlterSequence;
+import net.sf.jsqlparser.statement.analyze.Analyze;
 import net.sf.jsqlparser.statement.comment.Comment;
 import net.sf.jsqlparser.statement.create.index.CreateIndex;
 import net.sf.jsqlparser.statement.create.schema.CreateSchema;
@@ -50,25 +56,22 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.statement.show.ShowIndexStatement;
 import net.sf.jsqlparser.statement.show.ShowTablesStatement;
 import net.sf.jsqlparser.statement.truncate.Truncate;
 import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.statement.upsert.Upsert;
 import net.sf.jsqlparser.statement.values.ValuesStatement;
-import sql2msfol.select.Index;
-import sql2msfol.select.NamingConvention;
-import sql2msfol.select.SelectPattern;
-import sql2msfol.select.Value;
-import sql2msfol.utils.StatementUtils;
 
 public class SelectVisitor implements StatementVisitor {
 
 	private Boolean init;
 	private Alias alias;
-	
-	private SelectVisitor () {}
-	
-	public SelectVisitor (boolean init) {
+
+	private SelectVisitor() {
+	}
+
+	public SelectVisitor(boolean init) {
 		this.init = init;
 	}
 
@@ -288,7 +291,7 @@ public class SelectVisitor implements StatementVisitor {
 					} else {
 						Value.defineFunction(getAssociation(fi), where, null, getAssociation(fi).getName());
 					}
-					
+
 					Index.declareFunction(select, alias, SelectPattern.SELECT_FROM_WHERE);
 					Index.defineFunction(select, SelectPattern.SELECT_FROM_WHERE);
 					String index = NamingConvention.getSelName(ps);
@@ -441,7 +444,7 @@ public class SelectVisitor implements StatementVisitor {
 
 	private Association getAssociation(String name) {
 		try {
-			return DmUtils.getAssociation(DataModelHolder.getDataModel(), name);
+			return modeling.sql.fol.sql2msfol.utils.DmUtils.getAssociation(DataModelHolder.getDataModel(), name);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -451,24 +454,26 @@ public class SelectVisitor implements StatementVisitor {
 	private Association getAssociation(FromItem fi) {
 		if (fi instanceof Table) {
 			Table tb = (Table) fi;
-			return DmUtils.getAssociation(DataModelHolder.getDataModel(), tb.getName());
+			return modeling.sql.fol.sql2msfol.utils.DmUtils.getAssociation(DataModelHolder.getDataModel(), tb.getName());
 		} else {
 			try {
-				return DmUtils.getAssociation(DataModelHolder.getDataModel(), NamingConvention.getSelName(fi));
+				return modeling.sql.fol.sql2msfol.utils.DmUtils.getAssociation(DataModelHolder.getDataModel(),
+						NamingConvention.getSelName(fi));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 		return null;
 	}
-	
+
 	private Entity getEntity(FromItem fi) {
 		if (fi instanceof Table) {
 			Table tb = (Table) fi;
-			return DmUtils.getEntity(DataModelHolder.getDataModel(), tb.getName());
+			return modeling.sql.fol.sql2msfol.utils.DmUtils.getEntity(DataModelHolder.getDataModel(), tb.getName());
 		} else {
 			try {
-				return DmUtils.getEntity(DataModelHolder.getDataModel(), NamingConvention.getSelName(fi));
+				return modeling.sql.fol.sql2msfol.utils.DmUtils.getEntity(DataModelHolder.getDataModel(),
+						NamingConvention.getSelName(fi));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -604,5 +609,23 @@ public class SelectVisitor implements StatementVisitor {
 
 	public void setAlias(Alias alias) {
 		this.alias = alias;
+	}
+
+	@Override
+	public void visit(Analyze analyze) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void visit(ShowIndexStatement showIndex) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void visit(UnsupportedStatement unsupportedStatement) {
+		// TODO Auto-generated method stub
+
 	}
 }
